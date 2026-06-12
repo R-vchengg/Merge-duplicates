@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Importer — Review</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Circular Std', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-weight: 400;
+      background: var(--background-default);
+      color: var(--text-default);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Top header ────────────────────────────────────────── */
+    .page-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 32px;
+      background: var(--background-default);
+      border-bottom: 1px solid var(--border-default);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      height: 80px;
+    }
+
+    .header-section { display: flex; align-items: center; gap: 4px; min-width: 180px; }
+    .header-section--right { justify-content: flex-end; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+    .header-title { font-size: 16px; font-weight: 500; color: var(--text-default); }
+    .step-label { font-size: 20px; font-weight: 500; color: var(--text-default); line-height: 1.2; }
+
+    .meta-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; text-align: right; }
+    .meta-text strong { font-weight: 500; color: var(--text-default); }
+
+    /* ─── Main ──────────────────────────────────────────────── */
+    .page-main {
+      flex: 1;
+      padding-top: 80px;
+      padding-bottom: 80px;
+      overflow-y: auto;
+    }
+
+    /* ─── Tabs ──────────────────────────────────────────────── */
+    .tabs-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border-default);
+      padding: 0 40px;
+      margin-top: 16px;
+    }
+
+    .tab {
+      display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    .tab-inner {
+      padding: 12px 16px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      transition: color 150ms ease;
+    }
+
+    .tab-underline {
+      height: 2px; width: 100%;
+      background: transparent;
+      border-radius: 2px 2px 0 0;
+      transition: background 150ms ease;
+    }
+
+    .tab.active .tab-inner { color: var(--text-link); }
+    .tab.active .tab-underline { background: var(--border-primary); }
+    .tab:not(.active):hover .tab-inner { color: var(--text-default); }
+
+    /* ─── Sub-tab button group ──────────────────────────────── */
+    .btn-group {
+      display: flex;
+    }
+
+    .btn-group-inner {
+      display: inline-flex;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .btn-group-item {
+      padding: 6px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--background-default);
+      border: none;
+      cursor: pointer;
+      transition: background 150ms ease, color 150ms ease;
+      white-space: nowrap;
+    }
+
+    .btn-group-item + .btn-group-item {
+      border-left: 1px solid var(--border-default);
+    }
+
+    .btn-group-item:hover { background: var(--background-secondary); color: var(--text-default); }
+
+    .btn-group-item.active {
+      background: var(--background-quaternary);
+      color: var(--text-default);
+    }
+
+    /* ─── Unique / Duplicates panels ────────────────────────── */
+    #view-duplicates-content { display: block; }
+    #view-unique-content    { display: none; }
+
+    /* ─── Unique table — action toolbar ─────────────────────── */
+    #unique-body tr:hover .action-toolbar { opacity: 1; pointer-events: all; }
+
+    /* ─── Skipped table — action toolbar ────────────────────── */
+    #skipped-body tr:hover .action-toolbar { opacity: 1; pointer-events: all; }
+    #skipped-body tr:hover td { background: var(--background-tertiary); }
+
+    /* ─── Summary card ───────────────────────────────────────── */
+    .summary-card {
+      background: var(--background-default);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .summary-title { font-size: var(--Sizes-H3); font-weight: 500; color: var(--text-default); }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: var(--Sizes-Body);
+      color: var(--text-default);
+    }
+
+    .summary-row-label { font-weight: 400; }
+    .summary-row-label.bold { font-weight: 500; }
+    .summary-row-meta { font-size: var(--Sizes-Body); color: var(--text-muted); font-weight: 400; }
+    .summary-row-sub { display: flex; gap: 6px; align-items: center; font-size: var(--Sizes-Body); color: var(--text-muted); }
+    .summary-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+    .summary-divider { height: 1px; background: var(--border-default); }
+
+    /* ─── Content area ──────────────────────────────────────── */
+    .content-area { padding: 16px 40px 0; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ─── Hint banner ───────────────────────────────────────── */
+    .hint-banner {
+      transition: opacity 250ms ease, max-height 300ms ease, padding 300ms ease, margin 300ms ease;
+      overflow: hidden;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 12px 16px;
+      background: var(--background-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+    }
+    .hint-body { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 2px; }
+    .hint-title { font-size: 16px; font-weight: 500; color: var(--text-default); line-height: 1.5; }
+    .hint-sub { font-size: 13px; font-weight: 400; color: var(--text-default); line-height: 1.5; }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 24px;
+      background: var(--background-default);
+      border: 1px solid var(--border-primary);
+      border-radius: 999px;
+      font-family: inherit; font-size: 16px; font-weight: 500;
+      color: var(--text-link);
+      cursor: pointer; white-space: nowrap;
+      transition: background 150ms ease;
+      flex-shrink: 0;
+    }
+    .btn-outline:hover { background: var(--background-accent-primary); }
+
+    /* ─── Match meta line ───────────────────────────────────── */
+    .match-meta {
+      display: flex; gap: 24px; align-items: center;
+      font-size: 11px; color: var(--text-default);
+    }
+    .match-meta-item { display: flex; gap: 3px; align-items: center; }
+    .match-meta-label { font-weight: 400; line-height: 1.2; }
+    .match-meta-value { font-weight: 500; line-height: 1.5; }
+
+    /* ─── Table wrapper ─────────────────────────────────────── */
+    .table-wrap {
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1200px;
+      border-collapse: collapse;
+    }
+
+    /* ─── Table header ──────────────────────────────────────── */
+    thead th {
+      background: var(--background-tertiary);
+      border-bottom: 1px solid var(--border-default);
+      padding: 0;
+      font-weight: 500; font-size: 13px; color: var(--text-default);
+      white-space: nowrap;
+      position: sticky; top: 0; z-index: 10;
+    }
+
+    .th-inner {
+      display: flex; align-items: center;
+      padding: 14px 16px;
+      gap: 4px;
+      position: relative;
+    }
+
+    .th-inner::after {
+      content: '';
+      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 2px; height: 14px;
+      background: var(--border-default);
+    }
+
+    th:last-child .th-inner::after { display: none; }
+
+    .th-full-row {
+      background: var(--background-tertiary);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    tr.section-header-row td {
+      background: var(--background-tertiary);
+      border-top: 1px solid var(--border-default);
+      border-bottom: 1px solid var(--border-default);
+      padding: 0;
+    }
+
+    .th-match-cell {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+    }
+
+    /* Sort icon */
+    .sort-icon {
+      width: 12px; height: 12px; flex-shrink: 0;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .th-sortable { cursor: pointer; user-select: none; }
+    .th-sortable:hover .th-inner { color: var(--text-default); }
+    .th-sortable:hover .sort-icon { color: var(--text-default); }
+    .th-sortable[data-sort="asc"] .th-inner,
+    .th-sortable[data-sort="desc"] .th-inner { color: var(--text-highlight); }
+    .th-sortable[data-sort="asc"] .sort-icon,
+    .th-sortable[data-sort="desc"] .sort-icon { color: var(--icon-primary); }
+
+    /* ─── Confidence tag ────────────────────────────────────── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px; font-weight: 500;
+      white-space: nowrap;
+    }
+    .tag--green  { background: #d4edda; color: #186429; }
+    .tag--blue   { background: #d0e3f9; color: #0b4588; }
+    .tag--red    { background: #f8d7da; color: #842029; }
+    .tag--mist   { background: #f4f5f5; color: #28373e; border: 1px solid var(--border-default); opacity: 0.45; }
+    .tag--amber  { background: #fff3cd; color: #7a4500; }
+    .tag--orange { background: #fde8d4; color: #7a3300; }
+    tr.row-duplicate .tag--green,
+    tr.row-duplicate .tag--red { opacity: 0.45; }
+
+    /* ─── Table rows ────────────────────────────────────────── */
+    .group-separator td {
+      height: 8px;
+      background: var(--background-secondary);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    tbody tr.row-primary td {
+      background: var(--background-default);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    tbody tr.row-duplicate td {
+      background: var(--background-default);
+      border-bottom: 1px solid var(--border-default);
+      transition: background 150ms ease;
+    }
+
+    tbody tr.row-duplicate:hover td { background: var(--background-tertiary); }
+
+    tbody td.cell-invalid {
+      background: #fcebec;
+    }
+
+    tbody tr.row-duplicate:hover td.cell-invalid {
+      background: #f8d7da;
+    }
+
+    td {
+      padding: 8px 16px;
+      font-size: 13px; font-weight: 400;
+      color: var(--text-default);
+      white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+      vertical-align: middle;
+      border-right: 1px solid var(--border-default);
+    }
+
+    td:last-child { border-right: none; }
+
+    td.cell-dim { color: var(--text-inactive); }
+
+    td.cell-actions {
+      padding: 0;
+      position: relative;
+      overflow: visible;
+    }
+
+    /* ─── Action toolbar ────────────────────────────────────── */
+    .action-toolbar {
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      display: flex; align-items: stretch;
+      background: var(--background-default);
+      box-shadow: 0 2px 16px rgba(116,131,139,0.16);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 150ms ease;
+      z-index: 5;
+    }
+
+    tr.row-duplicate:hover .action-toolbar {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .action-btn {
+      display: flex; align-items: center; gap: 4px;
+      padding: 8px 16px;
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      color: var(--text-link);
+      background: var(--background-default);
+      border: none; cursor: pointer;
+      white-space: nowrap;
+      transition: background 150ms ease, color 150ms ease;
+      height: 100%;
+    }
+
+    .action-btn:hover { background: var(--background-accent-primary); }
+    .action-btn:disabled { color: var(--text-inactive); cursor: not-allowed; }
+    .action-btn:disabled:hover { background: transparent; }
+    .action-btn:disabled svg { opacity: 0.4; }
+
+    .action-btn svg { flex-shrink: 0; }
+
+    .action-divider {
+      width: 1px; background: var(--border-default);
+      flex-shrink: 0; margin: 4px 0;
+    }
+
+    /* ─── Skipped tab placeholder ───────────────────────────── */
+    .skipped-view { display: none; padding: 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+    /* ─── Footer ─────────────────────────────────────────────── */
+    .page-footer {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 32px;
+      background: var(--background-default);
+      border-top: 1px solid var(--border-default);
+      height: 80px;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 24px; height: 44px;
+      border-radius: 999px;
+      font-family: inherit; font-size: 16px; font-weight: 500;
+      border: none; cursor: pointer; white-space: nowrap;
+      transition: background 150ms ease;
+    }
+    .btn svg { width: 21px; height: 21px; flex-shrink: 0; }
+
+    .btn-primary {
+      background: linear-gradient(to bottom, #1373e3, #0d509f);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { background: linear-gradient(to bottom, #126dd8, #0a3971); }
+    .btn-primary:disabled { background: var(--components-button-primary-disabled); cursor: not-allowed; }
+
+    .btn-danger { background: #d13242; color: #fff; }
+
+    .btn-danger:hover { background: #9a2530; }
+
+    /* ─── Toast ─────────────────────────────────────────────── */
+    .toast-container {
+      position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+      z-index: 500;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 20px;
+      background: #0b0f12;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 400;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      animation: toast-in 200ms ease-out, toast-out 200ms ease-in 2.6s forwards;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateY(0); }
+      to   { opacity: 0; transform: translateY(8px); }
+    }
+
+    /* ─── Row dismiss animation ──────────────────────────────── */
+    .row-removing {
+      animation: row-fade-out 250ms ease-out forwards;
+    }
+    @keyframes row-fade-out {
+      from { opacity: 1; }
+      to   { opacity: 0; height: 0; padding: 0; }
+    }
+
+    /* ─── Icon helper ────────────────────────────────────────── */
+    .icon-btn-ghost {
+      display: inline-flex; background: none; border: none; padding: 0;
+      cursor: pointer; color: var(--icon-icon-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-section">
+      <span class="header-title">Review</span>
+      <button class="icon-btn-ghost" aria-label="Review info">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;">
+      <span class="step-label">Step 3 of 3</span>
+    </div>
+    <div class="header-section header-section--right">
+      <p class="meta-text">User email: <strong>info@roofrs.com</strong></p>
+      <p class="meta-text">Team: <strong>Personal</strong></p>
+    </div>
+  </header>
+
+  <!-- ─── Main ────────────────────────────────────────────────── -->
+  <main class="page-main">
+
+    <!-- Tabs -->
+    <div class="tabs-bar">
+      <div class="tab active" data-tab="extracted" role="tab" aria-selected="true">
+        <div class="tab-inner" id="tab-extracted-label">Extracted (370)</div>
+        <div class="tab-underline"></div>
+      </div>
+      <div class="tab" data-tab="skipped" role="tab" aria-selected="false">
+        <div class="tab-inner" id="tab-skipped-label">Skipped (30)</div>
+        <div class="tab-underline"></div>
+      </div>
+    </div>
+
+    <!-- Extracted view -->
+    <div id="view-extracted">
+
+      <!-- Hint banner — always visible above unique/duplicates toggle -->
+      <div style="padding: 16px 40px 0;">
+        <div class="hint-banner" id="hint-banner">
+          <div class="hint-body">
+            <p class="hint-title" id="dup-count-title">21 duplicate records found, review or manage duplicate records</p>
+            <p class="hint-sub">Matches were found by having near-identical fields such as Name, Email, or Phone</p>
+          </div>
+          <button class="btn-outline" id="btn-auto-skip">Auto-skip duplicates</button>
+        </div>
+      </div>
+
+      <!-- ── Unique view ─────────────────────────────────────── -->
+      <div id="view-unique-content">
+        <div class="content-area">
+
+          <!-- Unique / Duplicates toggle -->
+          <div class="btn-group">
+            <div class="btn-group-inner" role="group" aria-label="View type">
+              <button class="btn-group-item active" data-view="unique">Unique</button>
+              <button class="btn-group-item" data-view="duplicates">Duplicates</button>
+            </div>
+          </div>
+
+          <!-- Unique records table -->
+          <div class="table-wrap">
+            <table>
+              <colgroup>
+                <col style="width:82px">
+                <col style="width:200px">
+                <col style="width:220px">
+                <col style="width:130px">
+                <col style="width:110px">
+                <col style="width:120px">
+                <col style="width:130px">
+                <col style="width:140px">
+                <col style="width:210px">
+                <col style="width:130px">
+                <col style="width:160px">
+                <col>
+                <col style="width:0">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th><div class="th-inner">Status</div></th>
+                  <th><div class="th-inner">Full Name*</div></th>
+                  <th><div class="th-inner">Primary email*</div></th>
+                  <th><div class="th-inner">Primary Phone</div></th>
+                  <th><div class="th-inner">Id*</div></th>
+                  <th><div class="th-inner">Created at</div></th>
+                  <th><div class="th-inner">Notes</div></th>
+                  <th><div class="th-inner">Created by</div></th>
+                  <th><div class="th-inner">Secondary email</div></th>
+                  <th><div class="th-inner">Secondary phone</div></th>
+                  <th><div class="th-inner">Company name</div></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="unique-body">
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Mike Thompson</td>
+                  <td>mthompson@outlook.com</td>
+                  <td>289-555-0553</td>
+                  <td style="color:var(--text-muted);">MT-5509</td>
+                  <td style="color:var(--text-muted);">01/19/2024</td>
+                  <td style="color:var(--text-muted);">Yard Sign</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Amanda Torres</td>
+                  <td>atorres@gmail.com</td>
+                  <td>416-555-0771</td>
+                  <td style="color:var(--text-muted);">AT-6114</td>
+                  <td style="color:var(--text-muted);">05/07/2023</td>
+                  <td style="color:var(--text-muted);">Website form</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Robert Kim</td>
+                  <td>rkim@teksavvy.com</td>
+                  <td>647-555-0228</td>
+                  <td style="color:var(--text-muted);">RK-7702</td>
+                  <td style="color:var(--text-muted);">11/30/2023</td>
+                  <td style="color:var(--text-muted);">Referral — Chen job</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Fiona MacLeod</td>
+                  <td>fmacleod@shaw.ca</td>
+                  <td>604-555-0391</td>
+                  <td style="color:var(--text-muted);">FM-3341</td>
+                  <td style="color:var(--text-muted);">08/02/2023</td>
+                  <td style="color:var(--text-muted);">Google Ads lead</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Derek Osei</td>
+                  <td>d.osei@rogers.com</td>
+                  <td>905-555-0174</td>
+                  <td style="color:var(--text-muted);">DO-8820</td>
+                  <td style="color:var(--text-muted);">03/14/2024</td>
+                  <td style="color:var(--text-muted);">Door knock</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Heather Sinclair</td>
+                  <td>hsinclair@hotmail.com</td>
+                  <td>519-555-0882</td>
+                  <td style="color:var(--text-muted);">HS-4409</td>
+                  <td style="color:var(--text-muted);">09/27/2022</td>
+                  <td style="color:var(--text-muted);">Instant Estimator</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Invalid</span></td>
+                  <td>Unknown</td>
+                  <td class="cell-invalid">&nbsp;</td>
+                  <td style="color:var(--text-muted);">&nbsp;</td>
+                  <td style="color:var(--text-muted);">??-0331</td>
+                  <td style="color:var(--text-muted);">07/11/2019</td>
+                  <td style="color:var(--text-muted);">Missing email</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Owen Flaherty</td>
+                  <td>owen.f@bell.ca</td>
+                  <td>613-555-0647</td>
+                  <td style="color:var(--text-muted);">OF-6618</td>
+                  <td style="color:var(--text-muted);">12/05/2023</td>
+                  <td style="color:var(--text-muted);">Referral — Marsh job</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Yuki Nakamura</td>
+                  <td>y.nakamura@gmail.com</td>
+                  <td>778-555-0293</td>
+                  <td style="color:var(--text-muted);">YN-2271</td>
+                  <td style="color:var(--text-muted);">04/18/2024</td>
+                  <td style="color:var(--text-muted);">Website form</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Invalid</span></td>
+                  <td>Greg Paulsen</td>
+                  <td class="cell-invalid">&nbsp;</td>
+                  <td>905-555-0019</td>
+                  <td style="color:var(--text-muted);">GP-1103</td>
+                  <td style="color:var(--text-muted);">02/22/2021</td>
+                  <td style="color:var(--text-muted);">Missing email</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Sandra Okafor</td>
+                  <td>sandra.o@shaw.ca</td>
+                  <td>416-555-0229</td>
+                  <td style="color:var(--text-muted);">SO-9914</td>
+                  <td style="color:var(--text-muted);">06/12/2023</td>
+                  <td style="color:var(--text-muted);">Insurance claim</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>James Whitfield</td>
+                  <td>j.whitfield@gmail.com</td>
+                  <td>905-555-0773</td>
+                  <td style="color:var(--text-muted);">JW-4455</td>
+                  <td style="color:var(--text-muted);">02/28/2024</td>
+                  <td style="color:var(--text-muted);">Door knock</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Priya Mehta</td>
+                  <td>p.mehta@hotmail.com</td>
+                  <td>647-555-0118</td>
+                  <td style="color:var(--text-muted);">PM-8802</td>
+                  <td style="color:var(--text-muted);">10/05/2022</td>
+                  <td style="color:var(--text-muted);">Website form</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Liam O'Brien</td>
+                  <td>liam.obrien@bell.ca</td>
+                  <td>613-555-0934</td>
+                  <td style="color:var(--text-muted);">LO-3367</td>
+                  <td style="color:var(--text-muted);">07/20/2023</td>
+                  <td style="color:var(--text-muted);">Referral — Walsh job</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Carmen Delgado</td>
+                  <td>c.delgado@outlook.com</td>
+                  <td>289-555-0441</td>
+                  <td style="color:var(--text-muted);">CD-7751</td>
+                  <td style="color:var(--text-muted);">04/09/2024</td>
+                  <td style="color:var(--text-muted);">Yard sign</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Tanya Kowalski</td>
+                  <td>tkowalski@rogers.com</td>
+                  <td>519-555-0666</td>
+                  <td style="color:var(--text-muted);">TK-2284</td>
+                  <td style="color:var(--text-muted);">11/14/2021</td>
+                  <td style="color:var(--text-muted);">Google Ads lead</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Marcus Chen</td>
+                  <td>m.chen@yahoo.ca</td>
+                  <td>778-555-0557</td>
+                  <td style="color:var(--text-muted);">MC-5530</td>
+                  <td style="color:var(--text-muted);">08/31/2023</td>
+                  <td style="color:var(--text-muted);">Instant Estimator</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Bridget Murphy</td>
+                  <td>b.murphy@telus.net</td>
+                  <td>604-555-0882</td>
+                  <td style="color:var(--text-muted);">BM-1192</td>
+                  <td style="color:var(--text-muted);">01/06/2024</td>
+                  <td style="color:var(--text-muted);">Trade show</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Nathan Wexler</td>
+                  <td>n.wexler@gmail.com</td>
+                  <td>647-555-0345</td>
+                  <td style="color:var(--text-muted);">NW-6673</td>
+                  <td style="color:var(--text-muted);">03/25/2022</td>
+                  <td style="color:var(--text-muted);">Facebook ad</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Fatima Al-Hassan</td>
+                  <td>f.alhassan@shaw.ca</td>
+                  <td>416-555-0117</td>
+                  <td style="color:var(--text-muted);">FA-9987</td>
+                  <td style="color:var(--text-muted);">12/01/2023</td>
+                  <td style="color:var(--text-muted);">Website form</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                  <td>Curtis Baxter</td>
+                  <td>cbaxter@rogers.com</td>
+                  <td>905-555-0228</td>
+                  <td style="color:var(--text-muted);">CB-3318</td>
+                  <td style="color:var(--text-muted);">05/17/2023</td>
+                  <td style="color:var(--text-muted);">Referral — Park job</td>
+                </tr>
+                <tr class="row-primary">
+                  <td><span class="tag tag--red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Invalid</span></td>
+                  <td>Ingrid Sorensen</td>
+                  <td class="cell-invalid">&nbsp;</td>
+                  <td>289-555-0993</td>
+                  <td style="color:var(--text-muted);">IS-4421</td>
+                  <td style="color:var(--text-muted);">09/30/2022</td>
+                  <td style="color:var(--text-muted);">Missing email</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Duplicates view ───────────────────────────────────── -->
+      <div id="view-duplicates-content">
+      <div class="content-area">
+
+        <!-- Extracted / Skipped toggle -->
+        <!-- Unique / Duplicates toggle -->
+        <div class="btn-group">
+          <div class="btn-group-inner" role="group" aria-label="View type">
+            <button class="btn-group-item" data-view="unique">Unique</button>
+            <button class="btn-group-item active" data-view="duplicates">Duplicates</button>
+          </div>
+        </div>
+
+
+        <!-- Match meta -->
+        <div class="match-meta">
+          <div class="match-meta-item">
+            <span class="match-meta-label">Match suggestion:</span>
+            <span class="match-meta-value">Full name → Email → Primary Phone</span>
+          </div>
+          <div class="match-meta-item">
+            <span class="match-meta-label">Primary contact suggestion:</span>
+            <span class="match-meta-value">Most complete fields → Most recently updated → First created / oldest</span>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width:110px"><!-- status -->
+              <col style="width:82px"> <!-- validity -->
+              <col style="width:200px"><!-- full name -->
+              <col style="width:210px"><!-- primary email -->
+              <col style="width:130px"><!-- primary phone -->
+              <col style="width:110px"><!-- id -->
+              <col style="width:120px"><!-- created at -->
+              <col style="width:160px"><!-- notes -->
+              <col style="width:140px"><!-- created by -->
+              <col style="width:210px"><!-- secondary email -->
+              <col style="width:130px"><!-- secondary phone -->
+              <col style="width:160px"><!-- company name -->
+            </colgroup>
+            <thead>
+              <!-- Match header -->
+              <tr>
+                <th class="th-full-row" colspan="13">
+                  <div class="th-match-cell">
+                    <span style="font-size:16px;font-weight:500;color:var(--text-default);">Match: Full Name + Primary Phone</span>
+                  </div>
+                </th>
+              </tr>
+              <!-- Column headers -->
+              <tr>
+                <th><div class="th-inner"></div></th>
+                <th><div class="th-inner">Status</div></th>
+                <th data-col="2" data-sort="none" class="th-sortable">
+                  <div class="th-inner">
+                    Full Name*
+                    <svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/>
+                    </svg>
+                  </div>
+                </th>
+                <th data-col="3" data-sort="none" class="th-sortable"><div class="th-inner">Primary email*<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th data-col="4" data-sort="none" class="th-sortable"><div class="th-inner">Primary Phone<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th data-col="5" data-sort="none" class="th-sortable"><div class="th-inner">Id*<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th data-col="6" data-sort="none" class="th-sortable"><div class="th-inner">Created at<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th><div class="th-inner">Notes</div></th>
+                <th><div class="th-inner">Created by</div></th>
+                <th><div class="th-inner">Secondary email</div></th>
+                <th><div class="th-inner">Secondary phone</div></th>
+                <th><div class="th-inner">Company name</div></th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+
+              <!-- ── GROUP 1: Carlos Garcia ─────────────────── -->
+              <tr class="row-primary" data-group="1">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Carlos Garcia</td>
+                <td>carlosg@gmail.com</td>
+                <td>416-555-0182</td>
+                <td style="color:var(--text-muted);">CG-1091</td>
+                <td style="color:var(--text-muted);">11/09/2018</td>
+                <td style="color:var(--text-muted);">Referral — Johnson job</td>
+              </tr>
+              <tr class="row-duplicate" data-group="1" data-id="dup-1a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Invalid
+                </span></td>
+                <td class="cell-dim">Carlos Garcia</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">416-555-0182</td>
+                <td class="cell-dim">CG-0447</td>
+                <td class="cell-dim">01/01/2014</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 2: Sarah Mitchell ─────────────────── -->
+              <tr class="row-primary" data-group="2">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Sarah Mitchell</td>
+                <td>s.mitchell@homeowners.ca</td>
+                <td>905-555-0241</td>
+                <td style="color:var(--text-muted);">SM-2304</td>
+                <td style="color:var(--text-muted);">03/15/2021</td>
+                <td style="color:var(--text-muted);">Google Ads lead</td>
+              </tr>
+              <tr class="row-duplicate" data-group="2" data-id="dup-2a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Sarah Mitchell</td>
+                <td class="cell-dim">sarahmitchell@gmail.com</td>
+                <td class="cell-dim">905-555-0241</td>
+                <td class="cell-dim">SM-1887</td>
+                <td class="cell-dim">07/22/2019</td>
+                <td class="cell-dim">Facebook campaign</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 3: David Chen (3 records) ─────────── -->
+              <tr class="row-primary" data-group="3">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>David Chen</td>
+                <td>dchen@roofrequest.com</td>
+                <td>647-555-0319</td>
+                <td style="color:var(--text-muted);">DC-3812</td>
+                <td style="color:var(--text-muted);">06/30/2022</td>
+                <td style="color:var(--text-muted);">Instant Estimator</td>
+              </tr>
+              <tr class="row-duplicate" data-group="3" data-id="dup-3a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Invalid
+                </span></td>
+                <td class="cell-dim">David Chen</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">647-555-0319</td>
+                <td class="cell-dim">DC-0293</td>
+                <td class="cell-dim">09/14/2020</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="row-duplicate" data-group="3" data-id="dup-3b">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Invalid
+                </span></td>
+                <td class="cell-dim">D. Chen</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">647-555-9999</td>
+                <td class="cell-dim">DC-0118</td>
+                <td class="cell-dim">02/08/2019</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 4: Jennifer Walsh ──────────────────── -->
+              <tr class="row-primary" data-group="4">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Jennifer Walsh</td>
+                <td>j.walsh@walshresidence.com</td>
+                <td>519-555-0847</td>
+                <td style="color:var(--text-muted);">JW-4421</td>
+                <td style="color:var(--text-muted);">08/11/2023</td>
+                <td style="color:var(--text-muted);">Door knock</td>
+              </tr>
+              <tr class="row-duplicate" data-group="4" data-id="dup-4a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Invalid
+                </span></td>
+                <td class="cell-dim">Jennifer Walsh</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">519-555-0847</td>
+                <td class="cell-dim">JW-3901</td>
+                <td class="cell-dim">04/03/2022</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 5: Patricia Nguyen ───────────────── -->
+              <tr class="row-primary" data-group="5">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Patricia Nguyen</td>
+                <td>pnguyen@rogers.com</td>
+                <td>905-555-0134</td>
+                <td style="color:var(--text-muted);">PN-8801</td>
+                <td style="color:var(--text-muted);">02/14/2022</td>
+                <td style="color:var(--text-muted);">Instagram Ad</td>
+              </tr>
+              <tr class="row-duplicate" data-group="5" data-id="dup-5a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Pat Nguyen</td>
+                <td class="cell-dim">pnguyen@rogers.com</td>
+                <td class="cell-dim">905-555-0134</td>
+                <td class="cell-dim">PN-7723</td>
+                <td class="cell-dim">11/30/2020</td>
+                <td class="cell-dim">Door knock</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="row-duplicate" data-group="5" data-id="dup-5b">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Invalid
+                </span></td>
+                <td class="cell-dim">P. Nguyen</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">905-555-0134</td>
+                <td class="cell-dim">PN-6190</td>
+                <td class="cell-dim">07/05/2019</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 6: James Kowalski ─────────────────── -->
+              <tr class="row-primary" data-group="6">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>James Kowalski</td>
+                <td>jkowalski@bellnet.ca</td>
+                <td>416-555-0628</td>
+                <td style="color:var(--text-muted);">JK-2250</td>
+                <td style="color:var(--text-muted);">09/03/2023</td>
+                <td style="color:var(--text-muted);">Referral — Walsh job</td>
+              </tr>
+              <tr class="row-duplicate" data-group="6" data-id="dup-6a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">James Kowalski</td>
+                <td class="cell-dim">james.k@gmail.com</td>
+                <td class="cell-dim">416-555-0628</td>
+                <td class="cell-dim">JK-1847</td>
+                <td class="cell-dim">04/17/2021</td>
+                <td class="cell-dim">Yard Sign</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 7: Lisa Patel ─────────────────────── -->
+              <tr class="row-primary" data-group="7">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Lisa Patel</td>
+                <td>lpatel@sympatico.ca</td>
+                <td>647-555-0487</td>
+                <td style="color:var(--text-muted);">LP-9934</td>
+                <td style="color:var(--text-muted);">05/22/2024</td>
+                <td style="color:var(--text-muted);">Website form</td>
+              </tr>
+              <tr class="row-duplicate" data-group="7" data-id="dup-7a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Invalid
+                </span></td>
+                <td class="cell-dim">Lisa Patel</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">647-555-0487</td>
+                <td class="cell-dim">LP-8801</td>
+                <td class="cell-dim">12/10/2022</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 8: Ryan Okafor (both valid, different emails) ── -->
+              <tr class="row-primary" data-group="8">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Ryan Okafor</td>
+                <td>ryan.okafor@gmail.com</td>
+                <td>416-555-0392</td>
+                <td style="color:var(--text-muted);">RO-5512</td>
+                <td style="color:var(--text-muted);">03/28/2023</td>
+                <td style="color:var(--text-muted);">Referral — Patel job</td>
+              </tr>
+              <tr class="row-duplicate" data-group="8" data-id="dup-8a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Ryan Okafor</td>
+                <td class="cell-dim">rokafor@bellnet.ca</td>
+                <td class="cell-dim">416-555-0392</td>
+                <td class="cell-dim">RO-4801</td>
+                <td class="cell-dim">11/14/2021</td>
+                <td class="cell-dim">Google Ads lead</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="row-duplicate" data-group="8" data-id="dup-8b">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">R. Okafor</td>
+                <td class="cell-dim">ryanokafor@outlook.com</td>
+                <td class="cell-dim">416-555-0392</td>
+                <td class="cell-dim">RO-3290</td>
+                <td class="cell-dim">06/02/2020</td>
+                <td class="cell-dim">Instant Estimator</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 9: Melissa Tran (both valid, same email) ─── -->
+              <tr class="row-primary" data-group="9">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Melissa Tran</td>
+                <td>melissa.tran@rogers.com</td>
+                <td>647-555-0714</td>
+                <td style="color:var(--text-muted);">MT-7730</td>
+                <td style="color:var(--text-muted);">07/19/2024</td>
+                <td style="color:var(--text-muted);">Website form</td>
+              </tr>
+              <tr class="row-duplicate" data-group="9" data-id="dup-9a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Mel Tran</td>
+                <td class="cell-dim">melissa.tran@rogers.com</td>
+                <td class="cell-dim">647-555-0714</td>
+                <td class="cell-dim">MT-6604</td>
+                <td class="cell-dim">01/05/2023</td>
+                <td class="cell-dim">Instagram Ad</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Spacer -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+
+              <!-- ── GROUP 10: Tom Bassett (3 records all valid) ──── -->
+              <tr class="row-primary" data-group="10">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Tom Bassett</td>
+                <td>tbassett@sympatico.ca</td>
+                <td>905-555-0156</td>
+                <td style="color:var(--text-muted);">TB-9021</td>
+                <td style="color:var(--text-muted);">10/04/2024</td>
+                <td style="color:var(--text-muted);">Door knock</td>
+              </tr>
+              <tr class="row-duplicate" data-group="10" data-id="dup-10a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Thomas Bassett</td>
+                <td class="cell-dim">tom.bassett@gmail.com</td>
+                <td class="cell-dim">905-555-0156</td>
+                <td class="cell-dim">TB-7744</td>
+                <td class="cell-dim">04/22/2022</td>
+                <td class="cell-dim">Yard Sign</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="row-duplicate" data-group="10" data-id="dup-10b">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">T. Bassett</td>
+                <td class="cell-dim">thomas.b@bellnet.ca</td>
+                <td class="cell-dim">905-555-0156</td>
+                <td class="cell-dim">TB-6391</td>
+                <td class="cell-dim">09/17/2019</td>
+                <td class="cell-dim">Referral — Garcia job</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ── SECTION: Match Name + Email ────────────── -->
+              <tr class="section-header-row">
+                <td colspan="13">
+                  <div class="th-match-cell">
+                    <span class="tag tag--amber">Medium confidence</span>
+                    <span style="font-size:16px;font-weight:500;color:var(--text-default);">Match: Full Name + Email</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ── GROUP 11: Diane Fowler ─────────────────── -->
+              <tr class="row-primary" data-group="11">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Diane Fowler</td>
+                <td>dfowler@rogers.com</td>
+                <td>289-555-0417</td>
+                <td style="color:var(--text-muted);">DF-3381</td>
+                <td style="color:var(--text-muted);">06/12/2023</td>
+                <td style="color:var(--text-muted);">Website form</td>
+              </tr>
+              <tr class="row-duplicate" data-group="11" data-id="dup-11a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Diane Fowler</td>
+                <td class="cell-dim">dfowler@rogers.com</td>
+                <td class="cell-dim">647-555-0830</td>
+                <td class="cell-dim">DF-2104</td>
+                <td class="cell-dim">01/28/2021</td>
+                <td class="cell-dim">Referral — Okafor job</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ── GROUP 13: Kevin Marsh ──────────────────── -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+              <tr class="row-primary" data-group="13">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td>Kevin Marsh</td>
+                <td>kmarsh@hotmail.com</td>
+                <td>905-555-0294</td>
+                <td style="color:var(--text-muted);">KM-4417</td>
+                <td style="color:var(--text-muted);">02/09/2024</td>
+                <td style="color:var(--text-muted);">Yard Sign</td>
+              </tr>
+              <tr class="row-duplicate" data-group="13" data-id="dup-13a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Invalid</span></td>
+                <td class="cell-dim">Kevin Marsh</td>
+                <td class="cell-dim">kmarsh@hotmail.com</td>
+                <td class="cell-invalid cell-dim">&nbsp;</td>
+                <td class="cell-dim">KM-3182</td>
+                <td class="cell-dim">08/16/2022</td>
+                <td class="cell-dim">&nbsp;</td>
+                <td class="cell-actions"><div class="action-toolbar">
+                  <button class="action-btn" data-action="switch" title="Switch to Primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Switch to Primary</button>
+                  <div class="action-divider"></div>
+                  <button class="action-btn" data-action="not-dup" title="Not a duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg> Not duplicate</button>
+                  <button class="action-btn" data-action="skip" title="Manual skip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Manual Skip</button>
+                </div></td>
+              </tr>
+
+              <!-- ── GROUP 14: Aisha Coulibaly ───────────────── -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+              <tr class="row-primary" data-group="14">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td>Aisha Coulibaly</td>
+                <td>aisha.c@gmail.com</td>
+                <td>647-555-0581</td>
+                <td style="color:var(--text-muted);">AC-7703</td>
+                <td style="color:var(--text-muted);">11/22/2023</td>
+                <td style="color:var(--text-muted);">Instagram Ad</td>
+              </tr>
+              <tr class="row-duplicate" data-group="14" data-id="dup-14a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td class="cell-dim">Aisha Coulibaly</td>
+                <td class="cell-dim">aisha.c@gmail.com</td>
+                <td class="cell-dim">416-555-0092</td>
+                <td class="cell-dim">AC-5540</td>
+                <td class="cell-dim">04/07/2021</td>
+                <td class="cell-dim">Referral — Tran job</td>
+                <td class="cell-actions"><div class="action-toolbar">
+                  <button class="action-btn" data-action="switch" title="Switch to Primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Switch to Primary</button>
+                  <div class="action-divider"></div>
+                  <button class="action-btn" data-action="not-dup" title="Not a duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg> Not duplicate</button>
+                  <button class="action-btn" data-action="skip" title="Manual skip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Manual Skip</button>
+                </div></td>
+              </tr>
+
+              <!-- ── SECTION: Match Phone + Email ───────────── -->
+              <tr class="section-header-row">
+                <td colspan="13">
+                  <div class="th-match-cell">
+                    <span class="tag tag--orange">Low confidence</span>
+                    <span style="font-size:16px;font-weight:500;color:var(--text-default);">Match: Primary Phone + Email</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ── GROUP 12: Marcus Reid ───────────────────── -->
+              <tr class="row-primary" data-group="12">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td>Marcus Reid</td>
+                <td>marcusreid@outlook.com</td>
+                <td>416-555-0763</td>
+                <td style="color:var(--text-muted);">MR-6618</td>
+                <td style="color:var(--text-muted);">09/01/2024</td>
+                <td style="color:var(--text-muted);">Google Ads lead</td>
+              </tr>
+              <tr class="row-duplicate" data-group="12" data-id="dup-12a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  Valid
+                </span></td>
+                <td class="cell-dim">Marc Reid</td>
+                <td class="cell-dim">marcusreid@outlook.com</td>
+                <td class="cell-dim">416-555-0763</td>
+                <td class="cell-dim">MR-5290</td>
+                <td class="cell-dim">03/14/2022</td>
+                <td class="cell-dim">Door knock</td>
+                <td class="cell-actions">
+                  <div class="action-toolbar">
+                    <button class="action-btn" data-action="switch" title="Switch to Primary">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                      Switch to Primary
+                    </button>
+                    <div class="action-divider"></div>
+                    <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+                      Not duplicate
+                    </button>
+                    <button class="action-btn" data-action="skip" title="Manual skip">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      Manual Skip
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ── GROUP 15: Nora Szabo ────────────────────── -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+              <tr class="row-primary" data-group="15">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td>Nora Szabo</td>
+                <td>nszabo@bell.ca</td>
+                <td>416-555-0349</td>
+                <td style="color:var(--text-muted);">NS-8812</td>
+                <td style="color:var(--text-muted);">07/30/2024</td>
+                <td style="color:var(--text-muted);">Door knock</td>
+              </tr>
+              <tr class="row-duplicate" data-group="15" data-id="dup-15a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td class="cell-dim">N. Szabo</td>
+                <td class="cell-dim">nszabo@bell.ca</td>
+                <td class="cell-dim">416-555-0349</td>
+                <td class="cell-dim">NS-6630</td>
+                <td class="cell-dim">12/04/2021</td>
+                <td class="cell-dim">Instant Estimator</td>
+                <td class="cell-actions"><div class="action-toolbar">
+                  <button class="action-btn" data-action="switch" title="Switch to Primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Switch to Primary</button>
+                  <div class="action-divider"></div>
+                  <button class="action-btn" data-action="not-dup" title="Not a duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg> Not duplicate</button>
+                  <button class="action-btn" data-action="skip" title="Manual skip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Manual Skip</button>
+                </div></td>
+              </tr>
+
+              <!-- ── GROUP 16: Brett Holloway ────────────────── -->
+              <tr class="group-separator"><td colspan="13"></td></tr>
+              <tr class="row-primary" data-group="16">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Invalid</span></td>
+                <td>Brett Holloway</td>
+                <td class="cell-invalid">&nbsp;</td>
+                <td>289-555-0617</td>
+                <td style="color:var(--text-muted);">BH-5501</td>
+                <td style="color:var(--text-muted);">01/17/2025</td>
+                <td style="color:var(--text-muted);">Website form</td>
+              </tr>
+              <tr class="row-duplicate" data-group="16" data-id="dup-16a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td class="cell-dim">B. Holloway</td>
+                <td class="cell-dim">brett.holloway@outlook.com</td>
+                <td class="cell-dim">289-555-0617</td>
+                <td class="cell-dim">BH-4298</td>
+                <td class="cell-dim">05/29/2023</td>
+                <td class="cell-dim">Google Ads lead</td>
+                <td class="cell-actions"><div class="action-toolbar">
+                  <button class="action-btn" data-action="switch" title="Switch to Primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Switch to Primary</button>
+                  <div class="action-divider"></div>
+                  <button class="action-btn" data-action="not-dup" title="Not a duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg> Not duplicate</button>
+                  <button class="action-btn" data-action="skip" title="Manual skip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Manual Skip</button>
+                </div></td>
+              </tr>
+
+              <!-- ── SECTION: Match Full Name + Email + Phone ── -->
+              <tr class="section-header-row">
+                <td colspan="13">
+                  <div class="th-match-cell">
+                    <span style="font-size:16px;font-weight:500;color:var(--text-default);">Match: Full Name + Email + Primary Phone</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ── GROUP 17: Sandra Obi ───────────────────── -->
+              <tr class="row-primary" data-group="17">
+                <td><span class="tag tag--blue">Primary</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td>Sandra Obi</td>
+                <td>sandra.obi@gmail.com</td>
+                <td>647-555-0238</td>
+                <td style="color:var(--text-muted);">SO-9140</td>
+                <td style="color:var(--text-muted);">03/05/2024</td>
+                <td style="color:var(--text-muted);">Referral — Bassett job</td>
+              </tr>
+              <tr class="row-duplicate" data-group="17" data-id="dup-17a">
+                <td><span class="tag tag--mist">To be skipped</span></td>
+                <td><span class="tag tag--green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valid</span></td>
+                <td class="cell-dim">Sandra Obi</td>
+                <td class="cell-dim">sandra.obi@gmail.com</td>
+                <td class="cell-dim">647-555-0238</td>
+                <td class="cell-dim">SO-7712</td>
+                <td class="cell-dim">08/19/2022</td>
+                <td class="cell-dim">Instant Estimator</td>
+                <td class="cell-actions"><div class="action-toolbar">
+                  <button class="action-btn" data-action="switch" title="Switch to Primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Switch to Primary</button>
+                  <div class="action-divider"></div>
+                  <button class="action-btn" data-action="not-dup" title="Not a duplicate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg> Not duplicate</button>
+                  <button class="action-btn" data-action="skip" title="Manual skip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Manual Skip</button>
+                </div></td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+      </div><!-- /content-area -->
+      </div><!-- /view-duplicates-content -->
+    </div><!-- /view-extracted -->
+
+    <!-- Skipped view -->
+    <div id="view-skipped" style="display:none;">
+
+      <div style="padding: 16px 40px 0;">
+        <div class="hint-banner">
+          <div class="hint-body">
+            <p class="hint-title" id="skipped-count-title">30 records were skipped during import</p>
+            <p class="hint-sub">These records had missing required fields or were marked as duplicates. Export to review them offline.</p>
+          </div>
+          <button class="btn-outline">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="content-area">
+
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width:110px">
+              <col style="width:82px">
+              <col style="width:200px">
+              <col style="width:210px">
+              <col style="width:130px">
+              <col style="width:110px">
+              <col style="width:120px">
+              <col style="width:160px">
+              <col style="width:140px">
+              <col style="width:210px">
+              <col style="width:130px">
+              <col style="width:160px">
+              <col style="width:0">
+            </colgroup>
+            <thead>
+              <tr>
+                <th><div class="th-inner">Skipped</div></th>
+                <th><div class="th-inner">Reason</div></th>
+                <th><div class="th-inner">Full Name*</div></th>
+                <th><div class="th-inner">Primary email*</div></th>
+                <th><div class="th-inner">Primary Phone</div></th>
+                <th><div class="th-inner">Id*</div></th>
+                <th><div class="th-inner">Created at</div></th>
+                <th><div class="th-inner">Notes</div></th>
+                <th><div class="th-inner">Created by</div></th>
+                <th><div class="th-inner">Secondary email</div></th>
+                <th><div class="th-inner">Secondary phone</div></th>
+                <th><div class="th-inner">Company name</div></th>
+              </tr>
+            </thead>
+            <tbody id="skipped-body">
+              <tr class="row-primary">
+                <td><span class="tag tag--mist">Skipped</span></td>
+                <td><span class="tag tag--mist">Missing field</span></td>
+                <td>&nbsp;</td>
+                <td>noreply@bounce.net</td>
+                <td>&nbsp;</td>
+                <td>??-0091</td>
+                <td>03/03/2017</td>
+                <td>Missing required name</td>
+              </tr>
+              <tr class="row-primary">
+                <td><span class="tag tag--mist">Skipped</span></td>
+                <td><span class="tag tag--mist">Unsupported</span></td>
+                <td>Patricia Nguyen</td>
+                <td>p.nguyen@domain.ca</td>
+                <td>905-555-0381</td>
+                <td>PN-1142</td>
+                <td>07/14/2021</td>
+                <td>File type error on row</td>
+              </tr>
+              <tr class="row-primary">
+                <td><span class="tag tag--mist">Skipped</span></td>
+                <td><span class="tag tag--mist">Missing field</span></td>
+                <td>Unknown</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>??-0247</td>
+                <td>12/25/2020</td>
+                <td>No contact info</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <button class="btn btn-danger">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Save &amp; Exit
+    </button>
+    <button class="btn btn-primary" id="btn-next" disabled>
+      Next
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+  </footer>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // ─── Unique / Duplicates button group ────────────────────
+    function setView(view) {
+      document.querySelectorAll('.btn-group-item[data-view]').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === view);
+      });
+      document.getElementById('view-unique-content').style.display = view === 'unique' ? 'block' : 'none';
+      document.getElementById('view-duplicates-content').style.display = view === 'duplicates' ? 'block' : 'none';
+    }
+    document.querySelectorAll('.btn-group-item[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => setView(btn.dataset.view));
+    });
+
+    // ─── Tab switching ────────────────────────────────────────
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        const target = tab.dataset.tab;
+        document.getElementById('view-extracted').style.display = target === 'extracted' ? '' : 'none';
+        document.getElementById('view-skipped').style.display   = target === 'skipped'   ? 'block' : 'none';
+      });
+    });
+
+    // ─── Tab counts ───────────────────────────────────────────
+    let extractedCount = 370;
+    let skippedCount   = 30;
+
+    function updateSkippedBanner() {
+      const el = document.getElementById('skipped-count-title');
+      if (el) el.textContent = `${skippedCount} record${skippedCount !== 1 ? 's' : ''} were skipped during import`;
+    }
+
+    // ─── Toast helper ─────────────────────────────────────────
+    let dupCount = 21; // visible duplicate rows
+
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        ${msg}`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ─── Action toolbar interactions ──────────────────────────
+    document.getElementById('table-body').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const row    = btn.closest('tr.row-duplicate');
+      if (!row) return;
+
+      if (action === 'switch') {
+        const group  = row.dataset.group;
+        const primary = document.querySelector(`tr.row-primary[data-group="${group}"]`);
+        if (!primary) return;
+
+        // Swap badge classes
+        const primBadge = primary.cells[0].querySelector('.tag');
+        const dupBadge  = row.cells[0].querySelector('.tag');
+
+        // Swap primary badge
+        primBadge.className = 'tag tag--mist';
+        primBadge.textContent = 'To be skipped';
+
+        // Promote dup row
+        row.classList.remove('row-duplicate');
+        row.classList.add('row-primary');
+        if (dupBadge) {
+          dupBadge.className = 'tag tag--blue';
+          dupBadge.textContent = 'Primary';
+        } else {
+          row.cells[0].innerHTML = '<span class="tag tag--blue">Primary</span>';
+        }
+
+        // Dim old primary cells
+        Array.from(primary.cells).forEach((c, i) => {
+          if (i > 1) c.classList.add('cell-dim');
+        });
+        // Un-dim new primary cells
+        Array.from(row.cells).forEach((c, i) => {
+          if (i > 1) c.classList.remove('cell-dim');
+        });
+
+        // Remove action toolbar from promoted row
+        const toolbar = row.querySelector('.action-toolbar');
+        if (toolbar) toolbar.remove();
+
+        // Remove action cell (last cell)
+        const lastCell = row.cells[row.cells.length - 1];
+        if (lastCell.classList.contains('cell-actions')) lastCell.remove();
+
+        // Add action toolbar to old primary
+        primary.classList.remove('row-primary');
+        primary.classList.add('row-duplicate');
+
+        // Add action cell to old primary
+        const newActionTd = document.createElement('td');
+        newActionTd.className = 'cell-actions';
+        newActionTd.innerHTML = `
+          <div class="action-toolbar">
+            <button class="action-btn" data-action="switch">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              Switch to Primary
+            </button>
+            <div class="action-divider"></div>
+            <button class="action-btn" data-action="not-dup">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
+              Not duplicate
+            </button>
+            <button class="action-btn" data-action="skip">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              Manual Skip
+            </button>
+          </div>`;
+        primary.appendChild(newActionTd);
+
+        updateSwitchBtn(primary);
+        showToast('Record promoted to primary');
+
+      } else if (action === 'not-dup') {
+        row.style.transition = 'opacity 200ms ease, background 150ms ease';
+        row.style.opacity = '0';
+        setTimeout(() => {
+          row.remove();
+          dupCount--;
+          updateDupCount();
+        }, 200);
+        showToast('Record removed from duplicate group');
+
+      } else if (action === 'skip') {
+        skipRow(row);
+        showToast('Record marked as skipped');
+      }
+    });
+
+    function skipRow(row) {
+      const name  = row.cells[2].textContent.trim();
+      const email = row.cells[3].textContent.trim();
+      const phone = row.cells[4].textContent.trim();
+      const id    = row.cells[5].textContent.trim();
+      const date  = row.cells[6].textContent.trim();
+      const notes = row.cells[7].textContent.trim();
+
+      row.cells[0].innerHTML = '<span class="tag tag--mist">Skipped</span>';
+      row.style.transition = 'opacity 200ms ease';
+      row.style.opacity = '0.4';
+      const toolbar = row.querySelector('.action-toolbar');
+      if (toolbar) toolbar.style.opacity = '0';
+      dupCount--;
+      updateDupCount();
+
+      const skippedBody = document.getElementById('skipped-body');
+      const newRow = document.createElement('tr');
+      newRow.className = 'row-primary';
+      newRow.innerHTML = `
+        <td><span class="tag tag--mist">Skipped</span></td>
+        <td><span class="tag tag--mist">Duplicate</span></td>
+        <td>${name || '&nbsp;'}</td>
+        <td>${email || '&nbsp;'}</td>
+        <td>${phone || '&nbsp;'}</td>
+        <td>${id || '&nbsp;'}</td>
+        <td>${date || '&nbsp;'}</td>
+        <td>${notes || '&nbsp;'}</td>
+        <td></td><td></td><td></td><td></td>
+        <td class="cell-actions">${SKIPPED_UNDO_TOOLBAR}</td>`;
+      skippedBody.appendChild(newRow);
+      markMissingRequired();
+
+      extractedCount--;
+      skippedCount++;
+      document.getElementById('tab-extracted-label').textContent = `Extracted (${extractedCount})`;
+      document.getElementById('tab-skipped-label').textContent   = `Skipped (${skippedCount})`;
+      updateSkippedBanner();
+    }
+
+    // ─── Auto-skip all "To be skipped" rows ──────────────────
+    document.getElementById('btn-auto-skip').addEventListener('click', () => {
+      const rows = Array.from(document.querySelectorAll('tr.row-duplicate'));
+      const toSkip = rows.filter(r => {
+        const badge = r.cells[0].querySelector('.tag');
+        return badge && badge.textContent.trim() === 'To be skipped';
+      });
+      if (!toSkip.length) return;
+      document.getElementById('btn-auto-skip').disabled = true;
+      toSkip.forEach((row, i) => {
+        setTimeout(() => skipRow(row), i * 60);
+      });
+      const done = toSkip.length * 60;
+      setTimeout(() => {
+        showToast(`${toSkip.length} records auto-skipped`);
+      }, done);
+    });
+
+    // ─── Highlight missing required fields ───────────────────
+    // Required cols: 2 Full Name*, 3 Primary email*, 5 Id*
+    const REQUIRED_COLS = [2, 3, 5];
+
+    function markMissingRequired() {
+      // Duplicates + skipped tables: required cols 2 (Full Name), 3 (email), 5 (Id)
+      ['table-body', 'skipped-body'].forEach(id => {
+        const tbody = document.getElementById(id);
+        if (!tbody) return;
+        Array.from(tbody.rows).forEach(row => {
+          if (row.classList.contains('section-header-row') ||
+              row.classList.contains('group-separator')) return;
+          REQUIRED_COLS.forEach(col => {
+            const cell = row.cells[col];
+            if (!cell) return;
+            const text = cell.textContent.replace(/\u00a0/g, '').trim();
+            if (!text) cell.classList.add('cell-invalid');
+          });
+        });
+      });
+      // Unique table: required cols 1 (Full Name), 2 (Primary email), 4 (Id)
+      const uniqueBody = document.getElementById('unique-body');
+      if (uniqueBody) {
+        Array.from(uniqueBody.rows).forEach(row => {
+          [1, 2, 4].forEach(col => {
+            const cell = row.cells[col];
+            if (!cell) return;
+            const text = cell.textContent.replace(/\u00a0/g, '').trim();
+            if (!text) cell.classList.add('cell-invalid');
+          });
+        });
+      }
+    }
+
+    markMissingRequired();
+
+    function updateSwitchBtn(row) {
+      const switchBtn = row.querySelector('[data-action="switch"]');
+      if (!switchBtn) return;
+      const hasInvalidTag  = !!row.querySelector('.tag--red');
+      const hasInvalidCell = !!row.querySelector('.cell-invalid');
+      switchBtn.disabled = hasInvalidTag || hasInvalidCell;
+    }
+
+    // Disable Switch button on all invalid duplicate rows at load
+    document.querySelectorAll('tr.row-duplicate').forEach(updateSwitchBtn);
+
+    // ─── Column sorting ───────────────────────────────────────
+    let sortCol = null, sortDir = 'asc';
+
+    document.querySelectorAll('th.th-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = parseInt(th.dataset.col);
+        if (sortCol === col) {
+          sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortCol = col;
+          sortDir = 'asc';
+        }
+        // Update header states
+        document.querySelectorAll('th.th-sortable').forEach(t => {
+          t.dataset.sort = 'none';
+          const icon = t.querySelector('.sort-icon');
+          icon.innerHTML = '<polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/>';
+        });
+        th.dataset.sort = sortDir;
+        const icon = th.querySelector('.sort-icon');
+        icon.innerHTML = sortDir === 'asc'
+          ? '<polyline points="8 9 12 5 16 9"/>'
+          : '<polyline points="8 15 12 19 16 15"/>';
+
+        sortTableBy(col, sortDir);
+      });
+    });
+
+    function sortTableBy(colIndex, dir) {
+      const tbody = document.getElementById('table-body');
+      const rows  = Array.from(tbody.rows);
+
+      // Split into sections; each section = { header: tr|null, chunks: [] }
+      // Each chunk = { separator: tr|null, rows: [primary, ...dupes] }
+      const sections = [];
+      let section = { header: null, chunks: [] };
+      let chunk = null;
+
+      rows.forEach(row => {
+        if (row.classList.contains('section-header-row')) {
+          if (chunk) { section.chunks.push(chunk); chunk = null; }
+          sections.push(section);
+          section = { header: row, chunks: [] };
+        } else if (row.classList.contains('group-separator')) {
+          if (chunk) section.chunks.push(chunk);
+          chunk = { separator: row, rows: [] };
+        } else {
+          if (!chunk) chunk = { separator: null, rows: [] };
+          chunk.rows.push(row);
+        }
+      });
+      if (chunk) section.chunks.push(chunk);
+      sections.push(section);
+
+      // Sort chunks within each section by primary row's cell value
+      sections.forEach(sec => {
+        sec.chunks.sort((a, b) => {
+          const aRow = a.rows.find(r => r.classList.contains('row-primary'));
+          const bRow = b.rows.find(r => r.classList.contains('row-primary'));
+          if (!aRow || !bRow) return 0;
+          const aVal = (aRow.cells[colIndex]?.textContent || '').trim().toLowerCase();
+          const bVal = (bRow.cells[colIndex]?.textContent || '').trim().toLowerCase();
+          return dir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+      });
+
+      // Rebuild tbody
+      tbody.innerHTML = '';
+      sections.forEach(sec => {
+        if (sec.header) tbody.appendChild(sec.header);
+        sec.chunks.forEach(ch => {
+          if (ch.separator) tbody.appendChild(ch.separator);
+          ch.rows.forEach(r => tbody.appendChild(r));
+        });
+      });
+
+      // Re-evaluate disabled states and missing fields after DOM rebuild
+      document.querySelectorAll('tr.row-duplicate').forEach(updateSwitchBtn);
+      markMissingRequired();
+    }
+
+    const VALID_SVG   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+    const INVALID_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    const SKIP_SVG    = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    const UNIQUE_SKIP_TOOLBAR = `<div class="action-toolbar"><button class="action-btn" data-action="skip-unique" title="Skip">${SKIP_SVG} Skip</button></div>`;
+
+    function updateDupCount() {
+      const title = document.getElementById('dup-count-title');
+      if (dupCount > 0) {
+        title.textContent = `${dupCount} records remaining — review to merge automatically or manually`;
+      } else {
+        title.textContent = 'All duplicates reviewed. All records are now unique.';
+        const sub = document.querySelector('.hint-sub');
+        if (sub) sub.textContent = 'Your data is clean and ready to import with no overlapping records.';
+        document.querySelector('.hint-banner').style.background = 'var(--background-accent-success)';
+        document.querySelector('.hint-banner').style.borderColor = 'var(--border-success-subtle)';
+        const btn = document.getElementById('btn-auto-skip');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'View unique records';
+          btn.onclick = (e) => { e.preventDefault(); setView('unique'); };
+        }
+        document.getElementById('btn-next').disabled = false;
+
+        // Collect surviving primary rows from the duplicates table
+        const tbody = document.getElementById('table-body');
+        const uniqueBody = document.getElementById('unique-body');
+        const primaries = Array.from(tbody.querySelectorAll('tr.row-primary')).filter(r => {
+          const tag = r.cells[0]?.querySelector('.tag');
+          return tag && tag.textContent.trim() !== 'Skipped';
+        });
+
+        primaries.forEach((row, i) => {
+          setTimeout(() => {
+            const name  = (row.cells[2]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const email = (row.cells[3]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const phone = (row.cells[4]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const id    = (row.cells[5]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const date  = (row.cells[6]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const notes = (row.cells[7]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const isValid = name && email && id;
+            const tagHtml = isValid
+              ? `<span class="tag tag--green">${VALID_SVG} Valid</span>`
+              : `<span class="tag tag--red">${INVALID_SVG} Invalid</span>`;
+
+            const newRow = document.createElement('tr');
+            newRow.className = 'row-primary';
+            newRow.style.opacity = '0';
+            newRow.style.transition = 'opacity 300ms ease';
+            newRow.innerHTML = `
+              <td>${tagHtml}</td>
+              <td>${name || '&nbsp;'}</td>
+              <td${!email ? ' class="cell-invalid"' : ''}>${email || '&nbsp;'}</td>
+              <td>${phone || '&nbsp;'}</td>
+              <td style="color:var(--text-muted);">${id || '&nbsp;'}</td>
+              <td style="color:var(--text-muted);">${date || '&nbsp;'}</td>
+              <td style="color:var(--text-muted);">${notes || '&nbsp;'}</td>
+              <td></td><td></td><td></td><td></td>
+              <td class="cell-actions">${!isValid ? UNIQUE_SKIP_TOOLBAR : ''}</td>`;
+            uniqueBody.appendChild(newRow);
+            requestAnimationFrame(() => requestAnimationFrame(() => { newRow.style.opacity = '1'; }));
+          }, i * 60);
+        });
+
+        // Switch to Unique view after all rows have faded in
+        setTimeout(() => {
+          setView('unique');
+          showToast(`${primaries.length} records moved to Unique`);
+        }, primaries.length * 60 + 300);
+      }
+    }
+
+    // ─── Unique table — skip invalid rows ────────────────────
+    // ─── Stamp new columns onto all existing data rows ───────
+    // [createdBy, secondaryEmail, secondaryPhone, companyName]
+    const CONTACT_DETAILS = {
+      'Mike Thompson':    ['Sarah Mitchell',  '',                         '289-555-0122', ''],
+      'Amanda Torres':    ['Kyle Danvers',    'a.torres.work@shaw.ca',    '',             'Torres Property Mgmt'],
+      'Robert Kim':       ['Sarah Mitchell',  '',                         '647-555-0009', ''],
+      'Fiona MacLeod':    ['Admin',           'fmac.alt@gmail.com',       '',             'MacLeod Developments'],
+      'Derek Osei':       ['Kyle Danvers',    '',                         '',             ''],
+      'Heather Sinclair': ['Admin',           '',                         '519-555-0001', ''],
+      'Owen Flaherty':    ['Sarah Mitchell',  '',                         '',             'Flaherty Contracting'],
+      'Yuki Nakamura':    ['Kyle Danvers',    'yuki.n@yahoo.ca',          '',             ''],
+      'Sandra Okafor':    ['Admin',           '',                         '416-555-0881', 'Okafor Holdings'],
+      'James Whitfield':  ['Sarah Mitchell',  'j.whitfield.biz@gmail.com','',             ''],
+      'Priya Mehta':      ['Kyle Danvers',    '',                         '647-555-0002', 'Mehta Real Estate'],
+      "Liam O'Brien":     ['Admin',           'liam.alt@rogers.com',      '',             ''],
+      'Carmen Delgado':   ['Sarah Mitchell',  '',                         '',             ''],
+      'Tanya Kowalski':   ['Kyle Danvers',    't.kowalski.alt@bell.ca',   '519-555-0003', ''],
+      'Marcus Chen':      ['Admin',           '',                         '',             'Chen Commercial'],
+      'Bridget Murphy':   ['Sarah Mitchell',  'b.murphy.work@shaw.ca',    '',             ''],
+      'Nathan Wexler':    ['Kyle Danvers',    '',                         '647-555-0777', ''],
+      'Fatima Al-Hassan': ['Admin',           'fatima.h@hotmail.com',     '',             'Al-Hassan Properties'],
+      'Curtis Baxter':    ['Sarah Mitchell',  '',                         '',             ''],
+      // Duplicates table primary rows
+      'Carlos Garcia':    ['Kyle Danvers',    'cg.personal@hotmail.com',  '416-555-0001', 'Garcia Renovation'],
+      'Brett Holloway':   ['Admin',           '',                         '647-555-0099', ''],
+      'Jordan Lee':       ['Sarah Mitchell',  'jlee.home@shaw.ca',        '',             ''],
+      'Samantha Brooks':  ['Kyle Danvers',    '',                         '905-555-0303', 'Brooks & Associates'],
+      'Marcus Williams':  ['Admin',           'm.williams.alt@gmail.com', '',             ''],
+      'Patricia Nguyen':  ['Sarah Mitchell',  '',                         '',             ''],
+      'Kevin Park':       ['Kyle Danvers',    'kpark.biz@outlook.com',    '',             'Park Properties'],
+      'Emily Watson':     ['Admin',           '',                         '416-555-0572', ''],
+      'David Osei':       ['Sarah Mitchell',  'd.osei.work@rogers.com',   '',             ''],
+      'Jennifer Kim':     ['Kyle Danvers',    '',                         '',             'Kim Holdings'],
+      'Aisha Mohammed':   ['Admin',           '',                         '289-555-0414', ''],
+      'Thomas Bergeron':  ['Sarah Mitchell',  't.berg.alt@videotron.ca',  '',             'Bergeron Builds'],
+    };
+
+    function stampContactCells(row, name, insertBeforeRef) {
+      const d = CONTACT_DETAILS[name] || ['', '', '', ''];
+      d.forEach(val => {
+        const td = document.createElement('td');
+        if (val) td.textContent = val;
+        if (insertBeforeRef) row.insertBefore(td, insertBeforeRef);
+        else row.appendChild(td);
+      });
+    }
+
+    document.querySelectorAll('#unique-body tr').forEach(row => {
+      const name = (row.cells[1]?.textContent || '').trim();
+      stampContactCells(row, name, null);
+    });
+
+    document.querySelectorAll('#table-body tr').forEach(row => {
+      if (row.classList.contains('section-header-row') || row.classList.contains('group-separator')) return;
+      const name = (row.cells[2]?.textContent || '').trim();
+      const ref = row.classList.contains('row-duplicate') ? row.lastElementChild : null;
+      stampContactCells(row, name, ref);
+    });
+
+    const UNDO_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>`;
+    const SKIPPED_UNDO_TOOLBAR = `<div class="action-toolbar"><button class="action-btn" data-action="undo-skip" title="Undo">${UNDO_SVG} Undo</button></div>`;
+
+    document.querySelectorAll('#skipped-body tr').forEach(row => {
+      for (let i = 0; i < 4; i++) row.appendChild(document.createElement('td'));
+      const td = document.createElement('td');
+      td.className = 'cell-actions';
+      td.innerHTML = SKIPPED_UNDO_TOOLBAR;
+      row.appendChild(td);
+    });
+
+    // Stamp action cells onto all existing unique rows
+    document.querySelectorAll('#unique-body tr').forEach(row => {
+      const td = document.createElement('td');
+      td.className = 'cell-actions';
+      if (row.querySelector('.tag--red')) td.innerHTML = UNIQUE_SKIP_TOOLBAR;
+      row.appendChild(td);
+    });
+
+    // Handle skip clicks via delegation
+    document.getElementById('unique-body').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action="skip-unique"]');
+      if (!btn) return;
+      const row = btn.closest('tr');
+      const name  = (row.cells[1]?.textContent || '').replace(/\u00a0/g, '').trim();
+      const email = (row.cells[2]?.textContent || '').replace(/\u00a0/g, '').trim();
+      const phone = (row.cells[3]?.textContent || '').replace(/\u00a0/g, '').trim();
+      const id    = (row.cells[4]?.textContent || '').replace(/\u00a0/g, '').trim();
+      const date  = (row.cells[5]?.textContent || '').replace(/\u00a0/g, '').trim();
+      const notes = (row.cells[6]?.textContent || '').replace(/\u00a0/g, '').trim();
+
+      row.style.transition = 'opacity 200ms ease';
+      row.style.opacity = '0';
+      setTimeout(() => {
+        row.remove();
+        const skippedBody = document.getElementById('skipped-body');
+        const newRow = document.createElement('tr');
+        newRow.className = 'row-primary';
+        newRow.innerHTML = `
+          <td><span class="tag tag--mist">Skipped</span></td>
+          <td><span class="tag tag--mist">Invalid</span></td>
+          <td>${name || '&nbsp;'}</td>
+          <td>${email || '&nbsp;'}</td>
+          <td>${phone || '&nbsp;'}</td>
+          <td>${id || '&nbsp;'}</td>
+          <td>${date || '&nbsp;'}</td>
+          <td>${notes || '&nbsp;'}</td>
+          <td></td><td></td><td></td><td></td>
+          <td class="cell-actions">${SKIPPED_UNDO_TOOLBAR}</td>`;
+        skippedBody.appendChild(newRow);
+        markMissingRequired();
+        extractedCount--;
+        skippedCount++;
+        document.getElementById('tab-extracted-label').textContent = `Extracted (${extractedCount})`;
+        document.getElementById('tab-skipped-label').textContent   = `Skipped (${skippedCount})`;
+        updateSkippedBanner();
+        showToast('Record moved to Skipped');
+      }, 200);
+    });
+
+    // ─── Skipped table — undo ────────────────────────────────
+    document.getElementById('skipped-body').addEventListener('click', e => {
+      const btn = e.target.closest('[data-action="undo-skip"]');
+      if (!btn) return;
+      const row = btn.closest('tr');
+
+      // Read data from skipped row (cols 2–11)
+      const get = (i) => (row.cells[i]?.textContent || '').replace(/\u00a0/g, '').trim();
+      const name        = get(2);
+      const email       = get(3);
+      const phone       = get(4);
+      const id          = get(5);
+      const date        = get(6);
+      const notes       = get(7);
+      const createdBy   = get(8);
+      const secEmail    = get(9);
+      const secPhone    = get(10);
+      const company     = get(11);
+
+      const isValid = !!(name && email && id);
+      const tagHtml = isValid
+        ? `<span class="tag tag--green">${VALID_SVG} Valid</span>`
+        : `<span class="tag tag--red">${INVALID_SVG} Invalid</span>`;
+
+      row.style.transition = 'opacity 200ms ease';
+      row.style.opacity = '0';
+
+      setTimeout(() => {
+        row.remove();
+        skippedCount--;
+        extractedCount++;
+        document.getElementById('tab-skipped-label').textContent   = `Skipped (${skippedCount})`;
+        document.getElementById('tab-extracted-label').textContent = `Extracted (${extractedCount})`;
+        updateSkippedBanner();
+
+        const newRow = document.createElement('tr');
+        newRow.className = 'row-primary';
+        newRow.style.opacity = '0';
+        newRow.style.transition = 'opacity 300ms ease';
+        newRow.innerHTML = `
+          <td>${tagHtml}</td>
+          <td${!name  ? ' class="cell-invalid"' : ''}>${name  || '&nbsp;'}</td>
+          <td${!email ? ' class="cell-invalid"' : ''}>${email || '&nbsp;'}</td>
+          <td>${phone || '&nbsp;'}</td>
+          <td style="color:var(--text-muted);"${!id ? ' class="cell-invalid"' : ''}>${id || '&nbsp;'}</td>
+          <td style="color:var(--text-muted);">${date    || '&nbsp;'}</td>
+          <td style="color:var(--text-muted);">${notes   || '&nbsp;'}</td>
+          <td>${createdBy || '&nbsp;'}</td>
+          <td>${secEmail  || '&nbsp;'}</td>
+          <td>${secPhone  || '&nbsp;'}</td>
+          <td>${company   || '&nbsp;'}</td>
+          <td class="cell-actions">${!isValid ? UNIQUE_SKIP_TOOLBAR : ''}</td>`;
+
+        document.getElementById('unique-body').appendChild(newRow);
+        requestAnimationFrame(() => requestAnimationFrame(() => { newRow.style.opacity = '1'; }));
+        showToast('Record moved to Extracted');
+      }, 200);
+    });
+  </script>
+
+</body>
+</html>
