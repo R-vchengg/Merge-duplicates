@@ -20,9 +20,9 @@
 
     /* ─── Top header ────────────────────────────────────────── */
     .page-header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 24px 32px;
+      padding: var(--spacing-page-md) var(--spacing-page-lg);
       background: var(--background-default);
       border-bottom: 1px solid var(--border-default);
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -78,6 +78,38 @@
     .tab.active .tab-underline { background: var(--border-primary); }
     .tab:not(.active):hover .tab-inner { color: var(--text-default); }
 
+    /* ─── Confidence filter (segmented control) ─────────────── */
+    .confidence-filter {
+      display: inline-flex; align-items: center;
+      padding: var(--spacing-components-xs) 0 0;
+      background: var(--background-secondary);
+      border-radius: var(--radius-md);
+      padding: 3px;
+      gap: 2px;
+    }
+    .conf-btn {
+      display: inline-flex; align-items: center; gap: var(--spacing-components-xxxs);
+      font-family: inherit; font-size: var(--Sizes-Small); font-weight: 400;
+      color: var(--text-muted);
+      background: transparent; border: none;
+      padding: var(--spacing-components-xxxs) var(--spacing-components-md);
+      border-radius: var(--radius-sm);
+      cursor: pointer; white-space: nowrap;
+      transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    }
+    .conf-btn:hover:not(.active) { color: var(--text-default); background: var(--background-quaternary); }
+    .conf-btn.active {
+      color: var(--text-default); font-weight: 500;
+      background: var(--background-default);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 0 0 1px var(--border-default);
+    }
+    .conf-dot {
+      width: 7px; height: 7px; border-radius: var(--radius-circle); flex-shrink: 0;
+    }
+    .conf-dot--high   { background: var(--icon-success); }
+    .conf-dot--medium { background: var(--icon-warning); }
+    .conf-dot--low    { background: var(--icon-error); }
+
     /* ─── Sub-tab button group ──────────────────────────────── */
     .btn-group {
       display: flex;
@@ -85,44 +117,45 @@
 
     .btn-group-inner {
       display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-components-xxxs);
+      padding: var(--spacing-components-xxxs);
+      background: var(--background-default);
       border: 1px solid var(--border-default);
-      border-radius: var(--radius-md);
-      overflow: hidden;
+      border-radius: var(--radius-circle);
     }
 
     .btn-group-item {
-      padding: 6px 16px;
+      height: var(--dimensions-components-lg);
+      padding: 0 var(--spacing-components-lg);
       font-family: inherit;
-      font-size: 13px;
+      font-size: var(--Sizes-Small);
       font-weight: 500;
-      color: var(--text-muted);
-      background: var(--background-default);
+      line-height: 1.5;
+      color: var(--text-link);
+      background: var(--components-button-tertiary);
       border: none;
+      border-radius: var(--radius-circle);
       cursor: pointer;
-      transition: background 150ms ease, color 150ms ease;
+      transition: background 150ms ease;
       white-space: nowrap;
     }
 
-    .btn-group-item + .btn-group-item {
-      border-left: 1px solid var(--border-default);
-    }
+    .btn-group-item:hover { background: var(--components-button-alternative); }
 
-    .btn-group-item:hover { background: var(--background-secondary); color: var(--text-default); }
+    .btn-group-item.active { background: var(--components-button-alternative); }
 
-    .btn-group-item.active {
-      background: var(--background-quaternary);
-      color: var(--text-default);
-    }
+    .btn-group-item.active:hover { background: var(--components-button-alternative-hover); }
 
     /* ─── Unique / Duplicates panels ────────────────────────── */
     #view-duplicates-content { display: block; }
     #view-unique-content    { display: none; }
 
     /* ─── Unique table — action toolbar ─────────────────────── */
-    #unique-body tr:hover .action-toolbar { opacity: 1; pointer-events: all; }
+    #unique-body .action-toolbar { opacity: 1; pointer-events: all; }
 
     /* ─── Skipped table — action toolbar ────────────────────── */
-    #skipped-body tr:hover .action-toolbar { opacity: 1; pointer-events: all; }
+    #skipped-body .action-toolbar { opacity: 1; pointer-events: all; }
     #skipped-body tr:hover td { background: var(--background-tertiary); }
 
     /* ─── Summary card ───────────────────────────────────────── */
@@ -164,11 +197,11 @@
       padding: 12px 16px;
       background: var(--background-secondary);
       border: 1px solid var(--border-default);
-      border-radius: 8px;
+      border-radius: var(--radius-lg);
     }
     .hint-body { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 2px; }
     .hint-title { font-size: 16px; font-weight: 500; color: var(--text-default); line-height: 1.5; }
-    .hint-sub { font-size: 13px; font-weight: 400; color: var(--text-default); line-height: 1.5; }
+    .hint-sub { font-size: 13px; font-weight: 400; color: var(--text-muted); line-height: 1.5; }
 
     .btn-outline {
       display: inline-flex; align-items: center; justify-content: center;
@@ -184,21 +217,34 @@
     }
     .btn-outline:hover { background: var(--background-accent-primary); }
 
-    /* ─── Match meta line ───────────────────────────────────── */
+    /* ─── Match meta ────────────────────────────────────────── */
     .match-meta {
-      display: flex; gap: 24px; align-items: center;
-      font-size: 11px; color: var(--text-default);
+      display: flex; flex-direction: column; gap: 2px;
+      font-size: var(--Sizes-Smaller); color: var(--text-inactive); line-height: 1.5;
     }
-    .match-meta-item { display: flex; gap: 3px; align-items: center; }
-    .match-meta-label { font-weight: 400; line-height: 1.2; }
-    .match-meta-value { font-weight: 500; line-height: 1.5; }
+    .match-meta-row { display: flex; align-items: center; gap: 4px; }
+    .match-meta-label { font-weight: 500; white-space: nowrap; }
+    .match-meta-values { color: var(--text-inactive); }
+    .match-meta-info {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: none; border: none; padding: 0; cursor: default;
+      color: var(--text-inactive); flex-shrink: 0;
+      line-height: 1;
+    }
+    .match-meta-info:hover { color: var(--text-muted); }
+    .match-meta-note {
+      font-size: var(--Sizes-Smaller);
+      color: var(--text-inactive);
+      line-height: 1.5;
+      margin: 2px 0 0;
+    }
 
     /* ─── Table wrapper ─────────────────────────────────────── */
     .table-wrap {
       border: 1px solid var(--border-default);
-      border-radius: 8px;
-      overflow: hidden;
+      border-radius: var(--radius-lg);
       overflow-x: auto;
+      overflow-y: clip; /* clips for border-radius without blocking sticky */
     }
 
     table {
@@ -234,8 +280,9 @@
     th:last-child .th-inner::after { display: none; }
 
     .th-full-row {
-      background: var(--background-tertiary);
+      background: var(--background-secondary);
       border-bottom: 1px solid var(--border-default);
+      position: relative;
     }
 
     tr.section-header-row td {
@@ -249,6 +296,11 @@
       display: flex; align-items: center; gap: 12px;
       padding: 12px 16px;
     }
+    .th-match-label {
+      font-size: var(--Sizes-Body); font-weight: 500;
+      color: var(--text-default); line-height: 1.5;
+    }
+    td.cell-muted { color: var(--text-muted); }
 
     /* Sort icon */
     .sort-icon {
@@ -266,20 +318,97 @@
 
     /* ─── Confidence tag ────────────────────────────────────── */
     .tag {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px; font-weight: 500;
+      display: inline-flex; align-items: center; gap: var(--spacing-components-xxxs);
+      padding: 2px var(--spacing-components-xxs);
+      border-radius: var(--radius-sm);
+      font-size: var(--Sizes-Smaller); font-weight: 500; line-height: 1.5;
       white-space: nowrap;
+      border: 1px solid var(--components-tag-thumbnail-default-border);
     }
-    .tag--green  { background: #d4edda; color: #186429; }
-    .tag--blue   { background: #d0e3f9; color: #0b4588; }
-    .tag--red    { background: #f8d7da; color: #842029; }
-    .tag--mist   { background: #f4f5f5; color: #28373e; border: 1px solid var(--border-default); opacity: 0.45; }
-    .tag--amber  { background: #fff3cd; color: #7a4500; }
-    .tag--orange { background: #fde8d4; color: #7a3300; }
+    .tag--green  {
+      background: var(--components-tag-thumbnail-green-fill);
+      color: var(--components-tag-thumbnail-green-text);
+    }
+    .tag--blue   {
+      background: var(--components-tag-thumbnail-blue-fill);
+      color: var(--components-tag-thumbnail-blue-text);
+    }
+    .tag--blue .tag-edited-icon {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 4px;
+      opacity: 0.65;
+      vertical-align: middle;
+    }
+    .tag--red    {
+      background: var(--components-tag-thumbnail-red-fill);
+      color: var(--components-tag-thumbnail-red-text);
+    }
+    /* mist: visible border as per spec; opacity intentional product choice for de-emphasis in this context */
+    .tag--mist   {
+      background: var(--components-tag-thumbnail-mist-fill);
+      color: var(--components-tag-thumbnail-mist-text);
+      border-color: var(--components-tag-thumbnail-mist-border);
+      opacity: 0.45;
+    }
+    .tag--orange {
+      background: var(--components-tag-thumbnail-orange-fill);
+      color: var(--components-tag-thumbnail-orange-text);
+    }
+    /* tag--amber maps to orange variant — no separate amber token in design system */
+    .tag--amber  {
+      background: var(--components-tag-thumbnail-orange-fill);
+      color: var(--components-tag-thumbnail-orange-text);
+    }
+    .tag--neutral {
+      background: var(--components-tag-thumbnail-mist-fill);
+      color: var(--components-tag-thumbnail-mist-text);
+      border-color: var(--components-tag-thumbnail-mist-border);
+    }
+    /* dark/inverted variant for Roofr source indicator */
+    .tag--roofr  {
+      background: var(--components-tag-thumbnail-inverted-fill);
+      color: var(--components-tag-thumbnail-inverted-text);
+    }
+    /* outline variant for CSV source indicator */
+    .tag--csv    {
+      background: var(--components-tag-thumbnail-outline-fill);
+      color: var(--components-tag-thumbnail-outline-text);
+      border-color: var(--components-tag-thumbnail-outline-border);
+    }
     tr.row-duplicate .tag--green,
     tr.row-duplicate .tag--red { opacity: 0.45; }
+    /* tag--delete: orange for Roofr "To be deleted" priority rows */
+    .tag--delete {
+      background: var(--components-tag-thumbnail-orange-fill);
+      color: var(--components-tag-thumbnail-orange-text);
+    }
+
+    /* ─── Dismissed rows (Not a duplicate) ─────────────────── */
+    tr.row-dismissed td {
+      opacity: 0.75;
+      pointer-events: none;
+    }
+    tr.row-dismissed td:nth-child(2) {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .btn-undo {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-components-xxxs);
+      padding: 0 var(--spacing-components-xs);
+      font-family: inherit; font-size: var(--Sizes-Small); font-weight: 500;
+      color: var(--text-link);
+      background: var(--background-default);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      cursor: pointer; white-space: nowrap;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+    .btn-undo:hover {
+      background: var(--background-accent-primary);
+      border-color: var(--border-primary-subtle);
+    }
 
     /* ─── Table rows ────────────────────────────────────────── */
     .group-separator td {
@@ -293,6 +422,105 @@
       border-bottom: 1px solid var(--border-default);
     }
 
+    #table-body tr.row-primary td.cell-editable {
+      cursor: text;
+      position: relative;
+    }
+    #table-body tr.row-primary td.cell-editable:hover {
+      background: var(--background-tertiary);
+      outline: 1px solid var(--border-default);
+      outline-offset: -1px;
+    }
+    #table-body tr.row-primary td.cell-editable:hover::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* ─── Duplicate row override buttons ────────────────────── */
+    #table-body tr.row-duplicate td.cell-overrideable {
+      position: relative;
+    }
+    #table-body tr.row-duplicate td.cell-overrideable .override-btn {
+      display: none;
+      position: absolute;
+      top: 50%;
+      right: 6px;
+      transform: translateY(-50%);
+      align-items: center;
+      gap: 3px;
+      padding: 2px 6px 2px 4px;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--background-default);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      line-height: 1.4;
+      white-space: nowrap;
+      z-index: 5;
+      transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    #table-body tr.row-duplicate td.cell-overrideable:hover .override-btn {
+      display: inline-flex;
+    }
+    #table-body tr.row-duplicate td.cell-overrideable .override-btn:hover {
+      color: var(--text-link);
+      border-color: var(--border-primary-subtle);
+      background: var(--background-accent-primary);
+    }
+    #table-body tr.row-primary td.cell-editable input {
+      width: 100%;
+      height: 100%;
+      padding: 0 var(--spacing-components-md);
+      border: none;
+      outline: 2px solid var(--border-primary);
+      outline-offset: -2px;
+      background: var(--background-default);
+      font-family: inherit;
+      font-size: var(--Sizes-Small);
+      color: var(--text-default);
+      border-radius: 0;
+    }
+
+    /* ─── Edited primary cells ───────────────────────────────── */
+    #table-body tr.row-primary td.cell-edited {
+      background: var(--background-accent-primary) !important;
+      overflow: visible; /* allow undo button to render outside clip */
+    }
+    #table-body tr.row-primary td.cell-edited .undo-field-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      background: var(--background-default);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-circle);
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: color 120ms ease, border-color 120ms ease;
+      z-index: 10;
+      flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    #table-body tr.row-primary:hover td.cell-edited .undo-field-btn {
+      display: inline-flex;
+    }
+    #table-body tr.row-primary td.cell-edited .undo-field-btn:hover {
+      color: var(--text-link);
+      border-color: var(--border-primary-subtle);
+      background: var(--background-accent-primary);
+    }
+
     tbody tr.row-duplicate td {
       background: var(--background-default);
       border-bottom: 1px solid var(--border-default);
@@ -300,13 +528,88 @@
     }
 
     tbody tr.row-duplicate:hover td { background: var(--background-tertiary); }
+    tbody tr.row-duplicate:hover td.cell-actions { background: var(--background-tertiary); }
+    #skipped-body tr:hover td.cell-actions { background: var(--background-tertiary); }
+    #unique-body tr:hover td.cell-actions { background: var(--background-default); }
+
+    /* ─── Duplicates — sticky first two columns ──────────────── */
+    #view-duplicates-content table th:nth-child(1),
+    #view-duplicates-content table td:nth-child(1) {
+      position: sticky; left: 0; z-index: 3;
+      background: var(--background-default);
+      box-shadow: 1px 0 0 var(--border-default);
+    }
+    #view-duplicates-content table th:nth-child(2),
+    #view-duplicates-content table td:nth-child(2) {
+      position: sticky; left: 90px; z-index: 3;
+      background: var(--background-default);
+      box-shadow: 1px 0 0 var(--border-default);
+    }
+    /* Sticky cells track the row's hover/active background */
+    #view-duplicates-content tbody tr.row-duplicate:hover td:nth-child(1),
+    #view-duplicates-content tbody tr.row-duplicate:hover td:nth-child(2) {
+      background: var(--background-tertiary);
+    }
+    #view-duplicates-content tbody tr.row-duplicate:hover td.cell-invalid:nth-child(1),
+    #view-duplicates-content tbody tr.row-duplicate:hover td.cell-invalid:nth-child(2) {
+      background: var(--background-accent-danger);
+    }
+    /* Section/separator rows — full-width cell stays opaque */
+    #view-duplicates-content table tr.section-header-row td:nth-child(1),
+    #view-duplicates-content table tr.group-separator td:nth-child(1) {
+      background: inherit;
+      box-shadow: none;
+    }
+    /* Match row header and section headers span full width — reset left */
+    #view-duplicates-content table th.th-full-row { left: 0; }
+    /* Thead sticky cols sit above body sticky cols */
+    #view-duplicates-content table thead th:nth-child(1),
+    #view-duplicates-content table thead th:nth-child(2) {
+      z-index: 5;
+      background: var(--background-tertiary);
+    }
+
 
     tbody td.cell-invalid {
-      background: #fcebec;
+      background: var(--background-accent-danger);
     }
 
     tbody tr.row-duplicate:hover td.cell-invalid {
-      background: #f8d7da;
+      background: var(--background-accent-danger);
+    }
+
+    /* ─── Alternating group bands ────────────────────────────── */
+    #table-body tr.row-primary[data-group-band="alt"] td,
+    #table-body tr.row-duplicate[data-group-band="alt"] td {
+      background: var(--background-tertiary);
+    }
+    /* Preserve invalid cell color in alt bands */
+    #table-body tr[data-group-band="alt"] td.cell-invalid {
+      background: var(--background-accent-danger);
+    }
+    /* Hover on alt band duplicate rows */
+    #table-body tr.row-duplicate[data-group-band="alt"]:hover td {
+      background: var(--background-secondary);
+    }
+    #table-body tr.row-duplicate[data-group-band="alt"]:hover td.cell-invalid {
+      background: var(--background-accent-danger);
+    }
+    /* Sticky columns track band background */
+    #view-duplicates-content tbody tr[data-group-band="alt"] td:nth-child(1),
+    #view-duplicates-content tbody tr[data-group-band="alt"] td:nth-child(2) {
+      background: var(--background-tertiary);
+    }
+    #view-duplicates-content tbody tr.row-duplicate[data-group-band="alt"]:hover td:nth-child(1),
+    #view-duplicates-content tbody tr.row-duplicate[data-group-band="alt"]:hover td:nth-child(2) {
+      background: var(--background-secondary);
+    }
+
+    /* Diff highlight: cell value differs from primary record */
+    td.cell-diff {
+      background: #FFFBE6 !important;
+    }
+    tbody tr.row-duplicate:hover td.cell-diff {
+      background: #FFF5CC !important;
     }
 
     td {
@@ -316,17 +619,19 @@
       white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis;
       vertical-align: middle;
-      border-right: 1px solid var(--border-default);
     }
-
-    td:last-child { border-right: none; }
 
     td.cell-dim { color: var(--text-inactive); }
 
     td.cell-actions {
       padding: 0;
-      position: relative;
+      position: sticky;
+      right: 0;
+      z-index: 4;
+      background: var(--background-default);
       overflow: visible;
+      border-bottom: none !important; /* prevent border-collapse from misaligning the border relative to the sticky offset */
+      box-shadow: -1px 0 0 var(--border-default), 0 1px 0 var(--border-default); /* left separator + row bottom drawn via shadow, which tracks the sticky painted position exactly */
     }
 
     /* ─── Action toolbar ────────────────────────────────────── */
@@ -345,6 +650,79 @@
     tr.row-duplicate:hover .action-toolbar {
       opacity: 1;
       pointer-events: all;
+    }
+
+    /* Duplicates inline toolbar — always hidden; floating pill handles user interaction */
+    #table-body .action-toolbar {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* ─── Roofr row popover ─────────────────────────────────── */
+    .roofr-popover {
+      position: fixed;
+      z-index: 200;
+      max-width: 250px;
+      padding: var(--spacing-components-xs) var(--spacing-components-md);
+      background: var(--roofr-graphite);
+      color: var(--roofr-mist);
+      font-size: var(--Sizes-Smaller); font-weight: 400; line-height: 1.2;
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      overflow-wrap: break-word;
+      white-space: normal;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 150ms ease-out;
+    }
+    .roofr-popover.visible { opacity: 1; }
+
+    /* ─── Floating pill toolbar ─────────────────────────────── */
+    .dup-row-pill {
+      position: fixed;
+      display: flex;
+      align-items: center;
+      padding: 4px;
+      background: var(--background-default);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-circle);
+      box-shadow: 0 4px 36px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 150ms ease, transform 150ms ease;
+      transform: translateY(-4px);
+      z-index: 500;
+      white-space: nowrap;
+    }
+    .dup-row-pill.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+    .pill-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      font-family: inherit; font-size: var(--Sizes-Small); font-weight: 500;
+      color: var(--text-link);
+      background: transparent;
+      border: none; border-radius: var(--radius-circle);
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    .pill-btn:hover:not(:disabled) {
+      background: var(--background-accent-primary);
+    }
+    .pill-btn:disabled {
+      color: var(--text-inactive);
+      cursor: not-allowed;
+    }
+    .pill-btn svg { flex-shrink: 0; }
+    .pill-sep {
+      width: 1px; height: 14px;
+      background: var(--border-default);
+      flex-shrink: 0; margin: 0 2px;
     }
 
     .action-btn {
@@ -376,7 +754,7 @@
 
     /* ─── Footer ─────────────────────────────────────────────── */
     .page-footer {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 20px 32px;
       background: var(--background-default);
@@ -395,42 +773,47 @@
     .btn svg { width: 21px; height: 21px; flex-shrink: 0; }
 
     .btn-primary {
-      background: linear-gradient(to bottom, #1373e3, #0d509f);
-      color: #fff;
+      background: linear-gradient(to bottom, var(--background-gradients-primary-start), var(--background-gradients-primary-end));
+      color: var(--text-inverted-highlight);
     }
-    .btn-primary:hover:not(:disabled) { background: linear-gradient(to bottom, #126dd8, #0a3971); }
+    .btn-primary:hover:not(:disabled) { background: linear-gradient(to bottom, var(--background-gradients-alternative-start), var(--background-gradients-alternative-end)); }
     .btn-primary:disabled { background: var(--components-button-primary-disabled); cursor: not-allowed; }
 
-    .btn-danger { background: #d13242; color: #fff; }
+    .btn-danger { background: var(--components-button-danger); color: var(--text-inverted-highlight); }
 
-    .btn-danger:hover { background: #9a2530; }
+    .btn-danger:hover { background: var(--components-button-danger-hover); }
 
     /* ─── Toast ─────────────────────────────────────────────── */
     .toast-container {
-      position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
       z-index: 500;
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
       pointer-events: none;
     }
 
+    /* Success variant — component tokens mapped to semantic equivalents */
     .toast {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 20px;
-      background: #0b0f12;
-      color: #fff;
-      border-radius: 8px;
-      font-size: 13px; font-weight: 400;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-      animation: toast-in 200ms ease-out, toast-out 200ms ease-in 2.6s forwards;
+      display: flex; align-items: center; gap: var(--spacing-components-lg);
+      width: 306px;
+      padding: var(--spacing-components-md) var(--spacing-components-lg);
+      background: var(--background-accent-success);
+      border: 1px solid var(--border-success-subtle);
+      border-radius: var(--radius-lg);
+      font-size: var(--Sizes-Small); font-weight: 400; line-height: 1.5;
+      color: var(--text-default);
+      pointer-events: all;
+      animation: toast-in 150ms ease-out;
     }
+    .toast--exit { animation: toast-out 100ms ease-in forwards; }
+    .toast__icon { flex-shrink: 0; color: var(--icon-success); }
+    .toast__body { flex: 1; }
 
     @keyframes toast-in {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     @keyframes toast-out {
       from { opacity: 1; transform: translateY(0); }
-      to   { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 0; transform: translateY(-8px); }
     }
 
     /* ─── Row dismiss animation ──────────────────────────────── */
@@ -480,7 +863,7 @@
         <div class="tab-underline"></div>
       </div>
       <div class="tab" data-tab="skipped" role="tab" aria-selected="false">
-        <div class="tab-inner" id="tab-skipped-label">Skipped (30)</div>
+        <div class="tab-inner" id="tab-skipped-label">Skipped (3)</div>
         <div class="tab-underline"></div>
       </div>
     </div>
@@ -492,8 +875,8 @@
       <div style="padding: 16px 40px 0;">
         <div class="hint-banner" id="hint-banner">
           <div class="hint-body">
-            <p class="hint-title" id="dup-count-title">21 duplicate records found, review or manage duplicate records</p>
-            <p class="hint-sub">Matches were found by having near-identical fields such as Name, Email, or Phone</p>
+            <p class="hint-title" id="dup-count-title">29 duplicate records found across your CSV import and existing Roofr contacts</p>
+            <p class="hint-sub">Matches were identified by near-identical fields such as Name, Email, or Phone</p>
           </div>
           <button class="btn-outline" id="btn-auto-skip">Auto-skip duplicates</button>
         </div>
@@ -764,24 +1147,39 @@
           </div>
         </div>
 
+        <!-- Confidence filter -->
+        <div class="confidence-filter" id="confidence-filter" role="group" aria-label="Filter by confidence">
+          <button class="conf-btn active" data-conf="all">All</button>
+          <button class="conf-btn" data-conf="low"><span class="conf-dot conf-dot--low"></span>Low confidence</button>
+          <button class="conf-btn" data-conf="medium"><span class="conf-dot conf-dot--medium"></span>Medium confidence</button>
+          <button class="conf-btn" data-conf="high"><span class="conf-dot conf-dot--high"></span>High confidence</button>
+        </div>
 
         <!-- Match meta -->
         <div class="match-meta">
-          <div class="match-meta-item">
-            <span class="match-meta-label">Match suggestion:</span>
-            <span class="match-meta-value">Full name → Email → Primary Phone</span>
+          <div class="match-meta-row">
+            <span class="match-meta-label">Match criteria</span>
+            <button class="match-meta-info" data-tooltip="Configured in the additional setup step" aria-label="About match criteria">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
+            <span class="match-meta-values">Full name › Email › Primary Phone</span>
           </div>
-          <div class="match-meta-item">
-            <span class="match-meta-label">Primary contact suggestion:</span>
-            <span class="match-meta-value">Most complete fields → Most recently updated → First created / oldest</span>
+          <div class="match-meta-row">
+            <span class="match-meta-label">Primary contact priority</span>
+            <button class="match-meta-info" data-tooltip="Configured in the additional setup step" aria-label="About primary contact priority">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
+            <span class="match-meta-values">Existing Roofr fields › Most complete fields › Most recently updated › First created / oldest</span>
           </div>
+          <p class="match-meta-note">If multiple Roofr records are found, the last updated will take priority and become the primary record.</p>
         </div>
 
         <!-- Table -->
         <div class="table-wrap">
           <table>
             <colgroup>
-              <col style="width:110px"><!-- status -->
+              <col style="width:90px"> <!-- source -->
+              <col style="width:200px"><!-- priority -->
               <col style="width:82px"> <!-- validity -->
               <col style="width:200px"><!-- full name -->
               <col style="width:210px"><!-- primary email -->
@@ -795,19 +1193,12 @@
               <col style="width:160px"><!-- company name -->
             </colgroup>
             <thead>
-              <!-- Match header -->
-              <tr>
-                <th class="th-full-row" colspan="13">
-                  <div class="th-match-cell">
-                    <span style="font-size:16px;font-weight:500;color:var(--text-default);">Match: Full Name + Primary Phone</span>
-                  </div>
-                </th>
-              </tr>
               <!-- Column headers -->
               <tr>
-                <th><div class="th-inner"></div></th>
+                <th><div class="th-inner">Source</div></th>
+                <th><div class="th-inner">Priority</div></th>
                 <th><div class="th-inner">Status</div></th>
-                <th data-col="2" data-sort="none" class="th-sortable">
+                <th data-col="3" data-sort="none" class="th-sortable">
                   <div class="th-inner">
                     Full Name*
                     <svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -815,15 +1206,25 @@
                     </svg>
                   </div>
                 </th>
-                <th data-col="3" data-sort="none" class="th-sortable"><div class="th-inner">Primary email*<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
-                <th data-col="4" data-sort="none" class="th-sortable"><div class="th-inner">Primary Phone<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
-                <th data-col="5" data-sort="none" class="th-sortable"><div class="th-inner">Id*<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
-                <th data-col="6" data-sort="none" class="th-sortable"><div class="th-inner">Created at<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
-                <th><div class="th-inner">Notes</div></th>
+                <th data-col="4" data-sort="none" class="th-sortable"><div class="th-inner">Primary email*<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th data-col="5" data-sort="none" class="th-sortable"><div class="th-inner">Primary Phone<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th data-col="6" data-sort="none" class="th-sortable"><div class="th-inner">Id*<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
+                <th data-col="7" data-sort="none" class="th-sortable"><div class="th-inner">Created at<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 15 12 19 16 15"/><polyline points="8 9 12 5 16 9"/></svg></div></th>
                 <th><div class="th-inner">Created by</div></th>
                 <th><div class="th-inner">Secondary email</div></th>
                 <th><div class="th-inner">Secondary phone</div></th>
                 <th><div class="th-inner">Company name</div></th>
+                <th><div class="th-inner">Notes</div></th>
+              </tr>
+              <!-- Match header -->
+              <tr class="th-match-row">
+                <th class="th-full-row" colspan="14">
+                  <div class="th-match-cell">
+                    <span class="tag tag--neutral">High confidence</span>
+                    <span class="th-match-label">Match: Full Name + Primary Phone</span>
+                  </div>
+                </th>
+              </tr>
               </tr>
             </thead>
             <tbody id="table-body">
@@ -1702,7 +2103,7 @@
       <div style="padding: 16px 40px 0;">
         <div class="hint-banner">
           <div class="hint-body">
-            <p class="hint-title" id="skipped-count-title">30 records were skipped during import</p>
+            <p class="hint-title" id="skipped-count-title">3 records were skipped during import</p>
             <p class="hint-sub">These records had missing required fields or were marked as duplicates. Export to review them offline.</p>
           </div>
           <button class="btn-outline">
@@ -1762,7 +2163,7 @@
               </tr>
               <tr class="row-primary">
                 <td><span class="tag tag--mist">Skipped</span></td>
-                <td><span class="tag tag--mist">Unsupported</span></td>
+                <td><span class="tag tag--mist">Missing field</span></td>
                 <td>Patricia Nguyen</td>
                 <td>p.nguyen@domain.ca</td>
                 <td>905-555-0381</td>
@@ -1837,27 +2238,130 @@
 
     // ─── Tab counts ───────────────────────────────────────────
     let extractedCount = 370;
-    let skippedCount   = 30;
+    let skippedCount   = 3;
 
     function updateSkippedBanner() {
       const el = document.getElementById('skipped-count-title');
       if (el) el.textContent = `${skippedCount} record${skippedCount !== 1 ? 's' : ''} were skipped during import`;
     }
 
+    function getCellText(cell) {
+      if (!cell) return '';
+      const clone = cell.cloneNode(true);
+      clone.querySelectorAll('.override-btn').forEach(b => b.remove());
+      return clone.textContent.trim();
+    }
+
+    // Adds a dismissed duplicate row to the skipped tab.
+    // Duplicate row cell layout after all injections:
+    //   [0] Source  [1] Priority  [2] Validity  [3] Name  [4] Email
+    //   [5] Phone   [6] ID        [7] Date       [8] Created by
+    //   [9] Sec email  [10] Sec phone  [11] Company  [12] Notes  [13] cell-actions
+    // Adds a "not a duplicate" dismissed row to the Unique tab.
+    // Unique row layout: [0] Status [1] Name [2] Email [3] Phone [4] ID
+    //   [5] Date [6] Notes [7-10] stamped contact cells [11] cell-actions
+    function addNotDupToUniqueTab(row) {
+      const isValid = !!row.cells[2]?.querySelector('.tag--green');
+      const name    = getCellText(row.cells[3]);
+      const email   = getCellText(row.cells[4]);
+      const phone   = getCellText(row.cells[5]);
+      const id      = getCellText(row.cells[6]);
+      const date    = getCellText(row.cells[7]);
+      const notes   = getCellText(row.cells[12]);
+
+      const tagHtml = isValid
+        ? `<span class="tag tag--green">${VALID_SVG} Valid</span>`
+        : `<span class="tag tag--red">${INVALID_SVG} Invalid</span>`;
+
+      const uniqueBody = document.getElementById('unique-body');
+      const newRow = document.createElement('tr');
+      newRow.className = 'row-primary';
+      newRow.innerHTML = `
+        <td>${tagHtml}</td>
+        <td>${name || '&nbsp;'}</td>
+        <td${!isValid ? ' class="cell-invalid"' : ''}>${email || '&nbsp;'}</td>
+        <td>${phone || '&nbsp;'}</td>
+        <td class="cell-muted">${id || '&nbsp;'}</td>
+        <td class="cell-muted">${date || '&nbsp;'}</td>
+        <td class="cell-muted">${notes || '&nbsp;'}</td>
+        <td></td><td></td><td></td><td></td>
+        <td class="cell-actions">${!isValid ? UNIQUE_SKIP_TOOLBAR : ''}</td>`;
+      uniqueBody.appendChild(newRow);
+      return newRow;
+    }
+
+    function addDismissedToSkippedTab(row, reason) {
+      const name  = getCellText(row.cells[3]);
+      const email = getCellText(row.cells[4]);
+      const phone = getCellText(row.cells[5]);
+      const id    = getCellText(row.cells[6]);
+      const date  = getCellText(row.cells[7]);
+      const notes = getCellText(row.cells[12]);
+
+      const skippedBody = document.getElementById('skipped-body');
+      const newRow = document.createElement('tr');
+      newRow.className = 'row-primary';
+      newRow.innerHTML = `
+        <td><span class="tag tag--mist">Skipped</span></td>
+        <td><span class="tag tag--mist">${reason}</span></td>
+        <td>${name || '&nbsp;'}</td>
+        <td>${email || '&nbsp;'}</td>
+        <td>${phone || '&nbsp;'}</td>
+        <td>${id || '&nbsp;'}</td>
+        <td>${date || '&nbsp;'}</td>
+        <td>${notes || '&nbsp;'}</td>
+        <td></td><td></td><td></td><td></td>
+        <td class="cell-actions">${SKIPPED_UNDO_TOOLBAR}</td>`;
+      skippedBody.appendChild(newRow);
+
+      skippedCount++;
+      document.getElementById('tab-skipped-label').textContent = `Skipped (${skippedCount})`;
+      updateSkippedBanner();
+
+      return newRow;
+    }
+
     // ─── Toast helper ─────────────────────────────────────────
-    let dupCount = 21; // visible duplicate rows
+    let dupCount = 29; // visible duplicate rows
+
+    let _toastTimer = null;
+    let _currentToast = null;
 
     function showToast(msg) {
       const container = document.getElementById('toast-container');
+
+      // One at a time: immediately remove any existing toast
+      if (_currentToast) {
+        clearTimeout(_toastTimer);
+        _currentToast.remove();
+        _currentToast = null;
+      }
+
       const toast = document.createElement('div');
       toast.className = 'toast';
+      toast.setAttribute('role', 'status');
       toast.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="toast__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
         </svg>
-        ${msg}`;
+        <span class="toast__body">${msg}</span>`;
+
+      _currentToast = toast;
       container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+
+      function dismiss() {
+        toast.classList.add('toast--exit');
+        toast.addEventListener('animationend', () => {
+          toast.remove();
+          if (_currentToast === toast) _currentToast = null;
+        }, { once: true });
+      }
+
+      _toastTimer = setTimeout(dismiss, 5000);
+
+      // Hover pauses the dismiss timer
+      toast.addEventListener('mouseenter', () => clearTimeout(_toastTimer));
+      toast.addEventListener('mouseleave', () => { _toastTimer = setTimeout(dismiss, 5000); });
     }
 
     // ─── Action toolbar interactions ──────────────────────────
@@ -1875,8 +2379,8 @@
         if (!primary) return;
 
         // Swap badge classes
-        const primBadge = primary.cells[0].querySelector('.tag');
-        const dupBadge  = row.cells[0].querySelector('.tag');
+        const primBadge = primary.cells[1].querySelector('.tag');
+        const dupBadge  = row.cells[1].querySelector('.tag');
 
         // Swap primary badge
         primBadge.className = 'tag tag--mist';
@@ -1889,16 +2393,18 @@
           dupBadge.className = 'tag tag--blue';
           dupBadge.textContent = 'Primary';
         } else {
-          row.cells[0].innerHTML = '<span class="tag tag--blue">Primary</span>';
+          row.cells[1].innerHTML = '<span class="tag tag--blue">Primary</span>';
         }
+
+        // Source tags reflect the actual origin of the record — never swap them on switch
 
         // Dim old primary cells
         Array.from(primary.cells).forEach((c, i) => {
-          if (i > 1) c.classList.add('cell-dim');
+          if (i > 2) c.classList.add('cell-dim');
         });
         // Un-dim new primary cells
         Array.from(row.cells).forEach((c, i) => {
-          if (i > 1) c.classList.remove('cell-dim');
+          if (i > 2) c.classList.remove('cell-dim');
         });
 
         // Remove action toolbar from promoted row
@@ -1918,50 +2424,121 @@
         newActionTd.className = 'cell-actions';
         newActionTd.innerHTML = `
           <div class="action-toolbar">
-            <button class="action-btn" data-action="switch">
+            <button class="action-btn" data-action="switch" title="Switch to Primary">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-              Switch to Primary
             </button>
             <div class="action-divider"></div>
-            <button class="action-btn" data-action="not-dup">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="23" y1="1" x2="1" y2="23"/><path d="M17.5 17.5A10 10 0 1 1 6.5 6.5"/></svg>
-              Not duplicate
+            <button class="action-btn" data-action="not-dup" title="Not a duplicate">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
-            <button class="action-btn" data-action="skip">
+            <button class="action-btn" data-action="skip" title="Manual skip">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              Manual Skip
             </button>
           </div>`;
         primary.appendChild(newActionTd);
 
-        updateSwitchBtn(primary);
+        markEditableCells(row);
+
+        // Re-evaluate switch button for all duplicates in this group
+        // (new primary may not be Roofr, unblocking rows that were locked before)
+        document.querySelectorAll(`tr.row-duplicate[data-group="${group}"]`).forEach(updateSwitchBtn);
+
+        // Promoted row is now primary — remove any override buttons from its cells
+        row.querySelectorAll('.override-btn').forEach(b => b.remove());
+        row.querySelectorAll('.cell-overrideable').forEach(td => td.classList.remove('cell-overrideable'));
+
         showToast('Record promoted to primary');
 
       } else if (action === 'not-dup') {
-        row.style.transition = 'opacity 200ms ease, background 150ms ease';
-        row.style.opacity = '0';
-        setTimeout(() => {
-          row.remove();
-          dupCount--;
-          updateDupCount();
-        }, 200);
-        showToast('Record removed from duplicate group');
+        // Save state for undo
+        row._savedPriorityHTML = row.cells[1].innerHTML;
+
+        row.classList.add('row-dismissed');
+        row.cells[1].innerHTML = `
+          <div style="display:inline-flex;align-items:center;gap:var(--spacing-components-xs);">
+            <span class="tag tag--mist">Not a duplicate</span>
+            <button class="btn-undo" data-action="undo-dismiss" title="Undo" style="width:var(--dimensions-components-lg);padding:0;justify-content:center;align-self:stretch;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.67"/></svg>
+            </button>
+          </div>`;
+
+        row._uniqueRow = addNotDupToUniqueTab(row);
+        dupCount--;
+        updateDupCount();
+        hidePill(true);
+        showToast('Record marked as not a duplicate');
 
       } else if (action === 'skip') {
-        skipRow(row);
+        row._savedPriorityHTML = row.cells[1].innerHTML;
+        row.classList.add('row-dismissed');
+        row.cells[1].innerHTML = `
+          <div style="display:inline-flex;align-items:center;gap:var(--spacing-components-xs);">
+            <span class="tag tag--mist">Skipped</span>
+            <button class="btn-undo" data-action="undo-dismiss" title="Undo" style="width:var(--dimensions-components-lg);padding:0;justify-content:center;align-self:stretch;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.67"/></svg>
+            </button>
+          </div>`;
+        row._skippedRow = addDismissedToSkippedTab(row, 'Manual skip');
+        dupCount--;
+        updateDupCount();
+        hidePill(true);
         showToast('Record marked as skipped');
       }
     });
 
-    function skipRow(row) {
-      const name  = row.cells[2].textContent.trim();
-      const email = row.cells[3].textContent.trim();
-      const phone = row.cells[4].textContent.trim();
-      const id    = row.cells[5].textContent.trim();
-      const date  = row.cells[6].textContent.trim();
-      const notes = row.cells[7].textContent.trim();
+    // ─── Undo "Not a duplicate" ───────────────────────────────
+    document.getElementById('table-body').addEventListener('click', e => {
+      const btn = e.target.closest('.btn-undo[data-action="undo-dismiss"]');
+      if (!btn) return;
+      const row = btn.closest('tr.row-dismissed');
+      if (!row) return;
 
-      row.cells[0].innerHTML = '<span class="tag tag--mist">Skipped</span>';
+      row.classList.remove('row-dismissed');
+      row.cells[1].innerHTML = row._savedPriorityHTML;
+      delete row._savedPriorityHTML;
+
+      if (row._uniqueRow) {
+        row._uniqueRow.remove();
+        delete row._uniqueRow;
+      }
+      if (row._skippedRow) {
+        row._skippedRow.remove();
+        delete row._skippedRow;
+        skippedCount--;
+        document.getElementById('tab-skipped-label').textContent = `Skipped (${skippedCount})`;
+        updateSkippedBanner();
+      }
+
+      dupCount++;
+      updateDupCount();
+      updateSwitchBtn(row);
+    });
+
+    function moveRowToBottomOfGroup(row) {
+      const group  = row.dataset.group;
+      const tbody  = row.closest('tbody');
+      let   cursor = row.nextElementSibling;
+      let   target = null;
+      while (cursor) {
+        if (cursor.classList.contains('group-separator') ||
+            (cursor.dataset.group && cursor.dataset.group !== group)) {
+          target = cursor; break;
+        }
+        cursor = cursor.nextElementSibling;
+      }
+      if (target) tbody.insertBefore(row, target);
+      else        tbody.appendChild(row);
+    }
+
+    function skipRow(row) {
+      const name  = row.cells[3].textContent.trim();
+      const email = row.cells[4].textContent.trim();
+      const phone = row.cells[5].textContent.trim();
+      const id    = row.cells[6].textContent.trim();
+      const date  = row.cells[7].textContent.trim();
+      const notes = row.cells[8].textContent.trim();
+
+      row.cells[1].innerHTML = '<span class="tag tag--mist">Skipped</span>';
       row.style.transition = 'opacity 200ms ease';
       row.style.opacity = '0.4';
       const toolbar = row.querySelector('.action-toolbar');
@@ -1997,7 +2574,7 @@
     document.getElementById('btn-auto-skip').addEventListener('click', () => {
       const rows = Array.from(document.querySelectorAll('tr.row-duplicate'));
       const toSkip = rows.filter(r => {
-        const badge = r.cells[0].querySelector('.tag');
+        const badge = r.cells[1].querySelector('.tag');
         return badge && badge.textContent.trim() === 'To be skipped';
       });
       if (!toSkip.length) return;
@@ -2013,17 +2590,28 @@
 
     // ─── Highlight missing required fields ───────────────────
     // Required cols: 2 Full Name*, 3 Primary email*, 5 Id*
-    const REQUIRED_COLS = [2, 3, 5];
-
     function markMissingRequired() {
-      // Duplicates + skipped tables: required cols 2 (Full Name), 3 (email), 5 (Id)
-      ['table-body', 'skipped-body'].forEach(id => {
+      // Duplicates table: Source col shifts indices — Full Name=3, email=4, Id=6
+      const dupBody = document.getElementById('table-body');
+      if (dupBody) {
+        Array.from(dupBody.rows).forEach(row => {
+          if (row.classList.contains('section-header-row') || row.classList.contains('group-separator')) return;
+          [3, 4, 6].forEach(col => {
+            const cell = row.cells[col];
+            if (!cell) return;
+            const text = cell.textContent.replace(/\u00a0/g, '').trim();
+            if (!text) cell.classList.add('cell-invalid');
+          });
+        });
+      }
+      // Skipped table: unchanged indices — Full Name=2, email=3, Id=5
+      ['skipped-body'].forEach(id => {
         const tbody = document.getElementById(id);
         if (!tbody) return;
         Array.from(tbody.rows).forEach(row => {
           if (row.classList.contains('section-header-row') ||
               row.classList.contains('group-separator')) return;
-          REQUIRED_COLS.forEach(col => {
+          [2, 3, 5].forEach(col => {
             const cell = row.cells[col];
             if (!cell) return;
             const text = cell.textContent.replace(/\u00a0/g, '').trim();
@@ -2046,17 +2634,243 @@
     }
 
     markMissingRequired();
+    // ─── Auto-promote valid primaries ────────────────────────
+    // Roofr records always take priority as primary. Also demote invalid primaries.
+    (function autoPromoteValidPrimary() {
+      const groups = new Set(
+        Array.from(document.querySelectorAll('#table-body tr.row-primary[data-group]'))
+          .map(r => r.dataset.group)
+      );
+      groups.forEach(g => {
+        const primary = document.querySelector(`#table-body tr.row-primary[data-group="${g}"]`);
+        if (!primary) return;
+        const isInvalid = !!primary.querySelector('.tag--red');
+        const isCsv = primary.dataset.source === 'csv';
+        if (!isInvalid && !isCsv) return;
+        const dups = Array.from(document.querySelectorAll(`#table-body tr.row-duplicate[data-group="${g}"]`));
+        const validDup = dups.find(r => !r.querySelector('.tag--red') && r.dataset.source !== 'csv')
+          || (isInvalid ? dups.find(r => !r.querySelector('.tag--red')) : null);
+        if (!validDup) return;
+        // Swap priority badges — source cell not yet injected, so priority is at cells[0]
+        const primBadge = primary.cells[0].querySelector('.tag');
+        const dupBadge  = validDup.cells[0].querySelector('.tag');
+        if (primBadge) { primBadge.className = 'tag tag--mist'; primBadge.textContent = 'To be skipped'; }
+        if (dupBadge)  { dupBadge.className  = 'tag tag--blue'; dupBadge.textContent  = 'Primary'; }
+        primary.classList.replace('row-primary',   'row-duplicate');
+        validDup.classList.replace('row-duplicate', 'row-primary');
+        // Adjust cell-dim — before injection, name is at cells[2]
+        Array.from(primary.cells).forEach((c, i)  => { if (i >= 2) c.classList.add('cell-dim'); });
+        Array.from(validDup.cells).forEach((c, i) => { if (i >= 2) c.classList.remove('cell-dim'); });
+        // Ensure promoted row appears first in the group
+        const firstInGroup = document.querySelector(`#table-body tr[data-group="${g}"]`);
+        if (validDup !== firstInGroup) firstInGroup.parentNode.insertBefore(validDup, firstInGroup);
+        // Move cell-actions: strip from promoted row, add to demoted row
+        const actCell = validDup.querySelector('td.cell-actions');
+        if (actCell) actCell.remove();
+        if (!primary.querySelector('td.cell-actions')) {
+          const td = document.createElement('td');
+          td.className = 'cell-actions';
+          td.innerHTML = `<div class="action-toolbar">
+            <button class="action-btn" data-action="switch"></button>
+            <div class="action-divider"></div>
+            <button class="action-btn" data-action="not-dup"></button>
+            <button class="action-btn" data-action="skip"></button>
+          </div>`;
+          primary.appendChild(td);
+        }
+      });
+    })();
+
+    // ─── Alternating group band assignment ────────────────────
+    // Marks every other group's data rows with data-group-band="alt" so CSS
+    // can apply --background-tertiary to distinguish groups visually.
+    (function assignGroupBands() {
+      let band = 0;
+      document.querySelectorAll('#table-body tr').forEach(row => {
+        if (row.classList.contains('group-separator')) {
+          band = 1 - band;
+          return; // separators keep their own styling
+        }
+        if (row.classList.contains('section-header-row')) return;
+        if (band === 1) row.dataset.groupBand = 'alt';
+      });
+    })();
+
+    // ─── Confidence filter ────────────────────────────────────
+    // Move the thead match header into tbody so all sections can be reordered.
+    (function hoistTheadMatchHeader() {
+      const theadMatchRow = document.querySelector('#view-duplicates-content table thead tr.th-match-row');
+      if (!theadMatchRow) return;
+      const tbody  = document.getElementById('table-body');
+      const newRow = document.createElement('tr');
+      newRow.className = 'section-header-row';
+      const td = document.createElement('td');
+      td.colSpan = 14;
+      td.innerHTML = theadMatchRow.querySelector('.th-match-cell').outerHTML;
+      newRow.appendChild(td);
+      tbody.insertBefore(newRow, tbody.firstElementChild);
+      theadMatchRow.remove();
+    })();
+
+    // Auto-tag every tbody row with data-confidence by walking section headers.
+    (function tagConfidence() {
+      const tbody = document.getElementById('table-body');
+      let conf = 'high';
+      Array.from(tbody.rows).forEach(row => {
+        if (row.classList.contains('section-header-row')) {
+          const tag = row.querySelector('.tag');
+          if (tag) {
+            const t = tag.textContent.trim().toLowerCase();
+            conf = t.includes('medium') ? 'medium' : t.includes('low') ? 'low' : 'high';
+          } else {
+            conf = 'high';
+          }
+        }
+        row.dataset.confidence = conf;
+      });
+    })();
+
+    // Reorder tbody sections: low › medium › high
+    (function reorderSections() {
+      const tbody = document.getElementById('table-body');
+      const rows  = Array.from(tbody.rows);
+      const low    = rows.filter(r => r.dataset.confidence === 'low');
+      const medium = rows.filter(r => r.dataset.confidence === 'medium');
+      const high   = rows.filter(r => r.dataset.confidence === 'high');
+      [...low, ...medium, ...high].forEach(r => tbody.appendChild(r));
+    })();
+
+    function applyConfidenceFilter(level) {
+      const tbody = document.getElementById('table-body');
+      Array.from(tbody.rows).forEach(row => {
+        row.style.display = (level === 'all' || row.dataset.confidence === level) ? '' : 'none';
+      });
+    }
+
+    document.getElementById('confidence-filter').addEventListener('click', e => {
+      const btn = e.target.closest('.conf-btn');
+      if (!btn) return;
+      document.querySelectorAll('#confidence-filter .conf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyConfidenceFilter(btn.dataset.conf);
+      hidePill(true);
+    });
 
     function updateSwitchBtn(row) {
       const switchBtn = row.querySelector('[data-action="switch"]');
       if (!switchBtn) return;
+      const group = row.dataset.group;
+      const primaryRow = document.querySelector(`#table-body tr.row-primary[data-group="${group}"]`);
+      const groupHasRoofr = primaryRow && !!primaryRow.querySelector('.tag--roofr');
       const hasInvalidTag  = !!row.querySelector('.tag--red');
       const hasInvalidCell = !!row.querySelector('.cell-invalid');
-      switchBtn.disabled = hasInvalidTag || hasInvalidCell;
+      switchBtn.disabled = groupHasRoofr || hasInvalidTag || hasInvalidCell;
     }
 
     // Disable Switch button on all invalid duplicate rows at load
     document.querySelectorAll('tr.row-duplicate').forEach(updateSwitchBtn);
+
+    // ─── Inline editing for primary rows ─────────────────────
+    // Cols 0 (Source), 1 (Primary badge), 2 (Status tag) are non-editable
+    const EDIT_START_COL = 3;
+
+    function markEditableCells(row) {
+      Array.from(row.cells).forEach((td, i) => {
+        if (i >= EDIT_START_COL && !td.classList.contains('cell-actions')) {
+          td.classList.add('cell-editable');
+        }
+      });
+    }
+
+    document.querySelectorAll('#table-body tr.row-primary').forEach(markEditableCells);
+
+    function markRowEdited(row) {
+      const badge = row.cells[1] && row.cells[1].querySelector('.tag.tag--blue');
+      if (!badge || badge.querySelector('.tag-edited-icon')) return; // already marked
+      const icon = document.createElement('span');
+      icon.className = 'tag-edited-icon';
+      icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+      badge.appendChild(icon);
+    }
+
+    const UNDO_FIELD_SVG = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>`;
+
+    function applyFieldEditState(td, val) {
+      const original = td.dataset.originalValue || '';
+      const changed = val !== original;
+      td.classList.toggle('cell-edited', changed);
+      const existing = td.querySelector('.undo-field-btn');
+      if (changed && !existing) {
+        const btn = document.createElement('button');
+        btn.className = 'undo-field-btn';
+        btn.title = 'Undo edit';
+        btn.innerHTML = UNDO_FIELD_SVG;
+        td.appendChild(btn);
+      } else if (!changed && existing) {
+        existing.remove();
+      }
+    }
+
+    function startEdit(td) {
+      if (td.querySelector('input')) return; // already editing
+      // Snapshot original value on first edit
+      if (td.dataset.originalValue === undefined) {
+        td.dataset.originalValue = td.textContent.replace(/\u00a0/g, '').trim();
+      }
+      const current = td.textContent.replace(/\u00a0/g, '').trim();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = current;
+      // Clear text but keep the undo button if present
+      const undoBtn = td.querySelector('.undo-field-btn');
+      td.textContent = '';
+      if (undoBtn) td.appendChild(undoBtn);
+      td.appendChild(input);
+      input.focus();
+      input.select();
+
+      function commit() {
+        const val = input.value.trim();
+        input.remove();
+        td.textContent = val || '\u00a0';
+        applyFieldEditState(td, val);
+        markMissingRequired();
+        const row = td.closest('tr');
+        if (row) {
+          updateSwitchBtn(row);
+          if (val !== current) markRowEdited(row);
+        }
+      }
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = current; input.blur(); }
+      });
+    }
+
+    document.getElementById('table-body').addEventListener('click', e => {
+      // Undo field edit
+      const undoBtn = e.target.closest('.undo-field-btn');
+      if (undoBtn) {
+        e.stopPropagation();
+        const td = undoBtn.closest('td');
+        const original = td.dataset.originalValue || '';
+        td.textContent = original || '\u00a0';
+        td.classList.remove('cell-edited');
+        // undoBtn already removed by textContent reassignment
+        markMissingRequired();
+        const row = td.closest('tr');
+        if (row) updateSwitchBtn(row);
+        return;
+      }
+
+      // Start inline edit
+      const td = e.target.closest('td.cell-editable');
+      if (!td) return;
+      const row = td.closest('tr.row-primary');
+      if (!row) return;
+      startEdit(td);
+    });
 
     // ─── Column sorting ───────────────────────────────────────
     let sortCol = null, sortDir = 'asc';
@@ -2147,7 +2961,7 @@
     function updateDupCount() {
       const title = document.getElementById('dup-count-title');
       if (dupCount > 0) {
-        title.textContent = `${dupCount} records remaining — review to merge automatically or manually`;
+        title.textContent = `${dupCount} duplicate records found across your CSV import and existing Roofr contacts`;
       } else {
         title.textContent = 'All duplicates reviewed. All records are now unique.';
         const sub = document.querySelector('.hint-sub');
@@ -2166,18 +2980,18 @@
         const tbody = document.getElementById('table-body');
         const uniqueBody = document.getElementById('unique-body');
         const primaries = Array.from(tbody.querySelectorAll('tr.row-primary')).filter(r => {
-          const tag = r.cells[0]?.querySelector('.tag');
+          const tag = r.cells[1]?.querySelector('.tag');
           return tag && tag.textContent.trim() !== 'Skipped';
         });
 
         primaries.forEach((row, i) => {
           setTimeout(() => {
-            const name  = (row.cells[2]?.textContent || '').replace(/\u00a0/g, '').trim();
-            const email = (row.cells[3]?.textContent || '').replace(/\u00a0/g, '').trim();
-            const phone = (row.cells[4]?.textContent || '').replace(/\u00a0/g, '').trim();
-            const id    = (row.cells[5]?.textContent || '').replace(/\u00a0/g, '').trim();
-            const date  = (row.cells[6]?.textContent || '').replace(/\u00a0/g, '').trim();
-            const notes = (row.cells[7]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const name  = (row.cells[3]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const email = (row.cells[4]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const phone = (row.cells[5]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const id    = (row.cells[6]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const date  = (row.cells[7]?.textContent || '').replace(/\u00a0/g, '').trim();
+            const notes = (row.cells[8]?.textContent || '').replace(/\u00a0/g, '').trim();
             const isValid = name && email && id;
             const tagHtml = isValid
               ? `<span class="tag tag--green">${VALID_SVG} Valid</span>`
@@ -2192,9 +3006,9 @@
               <td>${name || '&nbsp;'}</td>
               <td${!email ? ' class="cell-invalid"' : ''}>${email || '&nbsp;'}</td>
               <td>${phone || '&nbsp;'}</td>
-              <td style="color:var(--text-muted);">${id || '&nbsp;'}</td>
-              <td style="color:var(--text-muted);">${date || '&nbsp;'}</td>
-              <td style="color:var(--text-muted);">${notes || '&nbsp;'}</td>
+              <td class="cell-muted">${id || '&nbsp;'}</td>
+              <td class="cell-muted">${date || '&nbsp;'}</td>
+              <td class="cell-muted">${notes || '&nbsp;'}</td>
               <td></td><td></td><td></td><td></td>
               <td class="cell-actions">${!isValid ? UNIQUE_SKIP_TOOLBAR : ''}</td>`;
             uniqueBody.appendChild(newRow);
@@ -2214,45 +3028,76 @@
     // ─── Stamp new columns onto all existing data rows ───────
     // [createdBy, secondaryEmail, secondaryPhone, companyName]
     const CONTACT_DETAILS = {
-      'Mike Thompson':    ['Sarah Mitchell',  '',                         '289-555-0122', ''],
-      'Amanda Torres':    ['Kyle Danvers',    'a.torres.work@shaw.ca',    '',             'Torres Property Mgmt'],
-      'Robert Kim':       ['Sarah Mitchell',  '',                         '647-555-0009', ''],
-      'Fiona MacLeod':    ['Admin',           'fmac.alt@gmail.com',       '',             'MacLeod Developments'],
-      'Derek Osei':       ['Kyle Danvers',    '',                         '',             ''],
-      'Heather Sinclair': ['Admin',           '',                         '519-555-0001', ''],
-      'Owen Flaherty':    ['Sarah Mitchell',  '',                         '',             'Flaherty Contracting'],
-      'Yuki Nakamura':    ['Kyle Danvers',    'yuki.n@yahoo.ca',          '',             ''],
-      'Sandra Okafor':    ['Admin',           '',                         '416-555-0881', 'Okafor Holdings'],
-      'James Whitfield':  ['Sarah Mitchell',  'j.whitfield.biz@gmail.com','',             ''],
-      'Priya Mehta':      ['Kyle Danvers',    '',                         '647-555-0002', 'Mehta Real Estate'],
-      "Liam O'Brien":     ['Admin',           'liam.alt@rogers.com',      '',             ''],
-      'Carmen Delgado':   ['Sarah Mitchell',  '',                         '',             ''],
-      'Tanya Kowalski':   ['Kyle Danvers',    't.kowalski.alt@bell.ca',   '519-555-0003', ''],
-      'Marcus Chen':      ['Admin',           '',                         '',             'Chen Commercial'],
-      'Bridget Murphy':   ['Sarah Mitchell',  'b.murphy.work@shaw.ca',    '',             ''],
-      'Nathan Wexler':    ['Kyle Danvers',    '',                         '647-555-0777', ''],
-      'Fatima Al-Hassan': ['Admin',           'fatima.h@hotmail.com',     '',             'Al-Hassan Properties'],
-      'Curtis Baxter':    ['Sarah Mitchell',  '',                         '',             ''],
-      // Duplicates table primary rows
+      'Mike Thompson':    ['Sarah Mitchell',  'mike.t.home@gmail.com',    '289-555-0122', 'Thompson Roofing'],
+      'Amanda Torres':    ['Kyle Danvers',    'a.torres.work@shaw.ca',    '416-555-0772', 'Torres Property Mgmt'],
+      'Robert Kim':       ['Sarah Mitchell',  'rkim.alt@hotmail.com',     '647-555-0009', 'Kim & Associates'],
+      'Fiona MacLeod':    ['Admin',           'fmac.alt@gmail.com',       '604-555-0392', 'MacLeod Developments'],
+      'Derek Osei':       ['Kyle Danvers',    'd.osei.work@rogers.com',   '905-555-0175', 'Osei Properties'],
+      'Heather Sinclair': ['Admin',           'h.sinclair.alt@shaw.ca',   '519-555-0001', 'Sinclair Homes'],
+      'Owen Flaherty':    ['Sarah Mitchell',  'o.flaherty@gmail.com',     '647-555-0223', 'Flaherty Contracting'],
+      'Yuki Nakamura':    ['Kyle Danvers',    'yuki.n@yahoo.ca',          '416-555-0558', 'Nakamura Design'],
+      'Sandra Okafor':    ['Admin',           's.okafor.alt@bell.ca',     '416-555-0881', 'Okafor Holdings'],
+      'James Whitfield':  ['Sarah Mitchell',  'j.whitfield.biz@gmail.com','289-555-0340', 'Whitfield Group'],
+      'Priya Mehta':      ['Kyle Danvers',    'priya.m.alt@outlook.com',  '647-555-0002', 'Mehta Real Estate'],
+      "Liam O'Brien":     ['Admin',           'liam.alt@rogers.com',      '416-555-0614', "O'Brien Builds"],
+      'Carmen Delgado':   ['Sarah Mitchell',  'c.delgado.home@gmail.com', '647-555-0881', ''],
+      'Tanya Kowalski':   ['Kyle Danvers',    't.kowalski.alt@bell.ca',   '519-555-0003', 'Kowalski Realty'],
+      'Marcus Chen':      ['Admin',           'm.chen.biz@outlook.com',   '416-555-0119', 'Chen Commercial'],
+      'Bridget Murphy':   ['Sarah Mitchell',  'b.murphy.work@shaw.ca',    '905-555-0448', 'Murphy Contracting'],
+      'Nathan Wexler':    ['Kyle Danvers',    'n.wexler.alt@gmail.com',   '647-555-0777', 'Wexler Development'],
+      'Fatima Al-Hassan': ['Admin',           'fatima.h@hotmail.com',     '416-555-0203', 'Al-Hassan Properties'],
+      'Curtis Baxter':    ['Sarah Mitchell',  'c.baxter.home@rogers.com', '905-555-0229', ''],
+      // Duplicates table rows
       'Carlos Garcia':    ['Kyle Danvers',    'cg.personal@hotmail.com',  '416-555-0001', 'Garcia Renovation'],
-      'Brett Holloway':   ['Admin',           '',                         '647-555-0099', ''],
-      'Jordan Lee':       ['Sarah Mitchell',  'jlee.home@shaw.ca',        '',             ''],
-      'Samantha Brooks':  ['Kyle Danvers',    '',                         '905-555-0303', 'Brooks & Associates'],
-      'Marcus Williams':  ['Admin',           'm.williams.alt@gmail.com', '',             ''],
-      'Patricia Nguyen':  ['Sarah Mitchell',  '',                         '',             ''],
-      'Kevin Park':       ['Kyle Danvers',    'kpark.biz@outlook.com',    '',             'Park Properties'],
-      'Emily Watson':     ['Admin',           '',                         '416-555-0572', ''],
-      'David Osei':       ['Sarah Mitchell',  'd.osei.work@rogers.com',   '',             ''],
-      'Jennifer Kim':     ['Kyle Danvers',    '',                         '',             'Kim Holdings'],
-      'Aisha Mohammed':   ['Admin',           '',                         '289-555-0414', ''],
-      'Thomas Bergeron':  ['Sarah Mitchell',  't.berg.alt@videotron.ca',  '',             'Bergeron Builds'],
+      'David Chen':       ['Sarah Mitchell',  'dchen.work@shaw.ca',       '647-555-0002', 'Chen Contracting'],
+      'D. Chen':          ['Admin',           'd.chen.old@hotmail.com',   '647-555-9998', ''],
+      'Jennifer Walsh':   ['Kyle Danvers',    'jen.walsh@outlook.com',    '519-555-0848', 'Walsh Residence'],
+      'Pat Nguyen':       ['Sarah Mitchell',  'pat.n@rogers.com',         '905-555-0135', 'Nguyen Investments'],
+      'P. Nguyen':        ['Admin',           'p.n.old@yahoo.ca',         '905-555-0136', ''],
+      'James Kowalski':   ['Kyle Danvers',    'jk.personal@gmail.com',    '416-555-0629', 'Kowalski Properties'],
+      'Lisa Patel':       ['Sarah Mitchell',  'l.patel.work@rogers.com',  '647-555-0488', 'Patel Holdings'],
+      'Ryan Okafor':      ['Admin',           'r.okafor.biz@gmail.com',   '416-555-0393', 'Okafor Group'],
+      'R. Okafor':        ['Kyle Danvers',    'r.okafor.alt@hotmail.com', '416-555-0394', ''],
+      'Melissa Tran':     ['Sarah Mitchell',  'm.tran.alt@hotmail.com',   '647-555-0715', 'Tran Properties'],
+      'Mel Tran':         ['Admin',           'mel.t@gmail.com',          '647-555-0716', ''],
+      'Tom Bassett':      ['Kyle Danvers',    't.bassett.home@gmail.com', '905-555-0157', 'Bassett Builds'],
+      'Thomas Bassett':   ['Sarah Mitchell',  'thomas.b.alt@shaw.ca',     '905-555-0158', 'Bassett Holdings'],
+      'T. Bassett':       ['Admin',           't.b.alt@bell.ca',          '905-555-0159', ''],
+      'Diane Fowler':     ['Kyle Danvers',    'd.fowler.alt@shaw.ca',     '289-555-0418', 'Fowler Properties'],
+      'Marcus Reid':      ['Sarah Mitchell',  'm.reid.biz@outlook.com',   '416-555-0764', 'Reid Construction'],
+      'Marc Reid':        ['Admin',           'marc.r@hotmail.com',       '416-555-0765', ''],
+      'Kevin Marsh':      ['Kyle Danvers',    'k.marsh.home@outlook.com', '905-555-0295', 'Marsh Realty'],
+      'Aisha Coulibaly':  ['Sarah Mitchell',  'a.coulibaly@shaw.ca',      '647-555-0582', 'Coulibaly Properties'],
+      'Nora Szabo':       ['Admin',           'n.szabo.alt@gmail.com',    '416-555-0350', 'Szabo Renovations'],
+      'N. Szabo':         ['Kyle Danvers',    'n.s.old@hotmail.com',      '416-555-0351', ''],
+      'Brett Holloway':   ['Admin',           'brett.h.work@outlook.com', '289-555-0618', 'Holloway Contracting'],
+      'B. Holloway':      ['Sarah Mitchell',  'b.h.personal@rogers.com',  '289-555-0619', ''],
+      'Sandra Obi':       ['Kyle Danvers',    's.obi.work@gmail.com',     '647-555-0239', 'Obi Development'],
+      'Jordan Lee':       ['Sarah Mitchell',  'jlee.home@shaw.ca',        '604-555-0221', 'Lee Investments'],
+      'Samantha Brooks':  ['Kyle Danvers',    's.brooks.alt@gmail.com',   '905-555-0303', 'Brooks & Associates'],
+      'Marcus Williams':  ['Admin',           'm.williams.alt@gmail.com', '647-555-0334', 'Williams Group'],
+      'Patricia Nguyen':  ['Sarah Mitchell',  'pnguyen.work@rogers.com',  '905-555-0382', 'Nguyen Realty'],
+      'Kevin Park':       ['Kyle Danvers',    'kpark.biz@outlook.com',    '647-555-0119', 'Park Properties'],
+      'Emily Watson':     ['Admin',           'e.watson.alt@bell.ca',     '416-555-0572', 'Watson Homes'],
+      'David Osei':       ['Sarah Mitchell',  'd.osei.work@rogers.com',   '905-555-0176', 'Osei Development'],
+      'Jennifer Kim':     ['Kyle Danvers',    'j.kim.alt@hotmail.com',    '416-555-0883', 'Kim Holdings'],
+      'Aisha Mohammed':   ['Admin',           'a.mohammed.biz@shaw.ca',   '289-555-0414', 'Mohammed Properties'],
+      'Thomas Bergeron':  ['Sarah Mitchell',  't.berg.alt@videotron.ca',  '514-555-0221', 'Bergeron Builds'],
+      // Group 18 — Robert Kim variants
+      'Rob Kim':          ['Admin',           'rob.k.alt@shaw.ca',        '416-555-0492', ''],
+      'R. Kim':           ['Kyle Danvers',    'r.kim.old@bell.ca',        '416-555-0493', ''],
+      // Group 19 — Amanda Torres variants
+      'A. Torres':        ['Admin',           'a.torres.alt@bell.ca',     '905-555-0774', 'Torres Holdings'],
+      'Amanda T.':        ['Sarah Mitchell',  'at.home@hotmail.com',      '905-555-0775', ''],
+      'A.M. Torres':      ['Kyle Danvers',    'am.t.alt@gmail.com',       '905-555-0776', ''],
     };
 
-    function stampContactCells(row, name, insertBeforeRef) {
+    function stampContactCells(row, name, insertBeforeRef, dimmed) {
       const d = CONTACT_DETAILS[name] || ['', '', '', ''];
       d.forEach(val => {
         const td = document.createElement('td');
         if (val) td.textContent = val;
+        if (dimmed) td.classList.add('cell-dim');
         if (insertBeforeRef) row.insertBefore(td, insertBeforeRef);
         else row.appendChild(td);
       });
@@ -2265,10 +3110,341 @@
 
     document.querySelectorAll('#table-body tr').forEach(row => {
       if (row.classList.contains('section-header-row') || row.classList.contains('group-separator')) return;
-      const name = (row.cells[2]?.textContent || '').trim();
-      const ref = row.classList.contains('row-duplicate') ? row.lastElementChild : null;
-      stampContactCells(row, name, ref);
+      const name = (row.cells[2]?.textContent || '').trim(); // Source not yet inserted; name is still at col 2
+      const isDup = row.classList.contains('row-duplicate');
+      const ref = isDup ? row.lastElementChild : null;
+      stampContactCells(row, name, ref, isDup);
+
+      // Stamp Source cell — Roofr when data-source="roofr" (explicit) or primary without csv flag
+      const sourceTd = document.createElement('td');
+      const isPrimary = row.classList.contains('row-primary');
+      const isRoofr = row.dataset.source === 'roofr' || (isPrimary && row.dataset.source !== 'csv');
+      sourceTd.innerHTML = isRoofr
+        ? '<span class="tag tag--roofr">Roofr</span>'
+        : '<span class="tag tag--csv">CSV</span>';
+      row.insertBefore(sourceTd, row.firstElementChild);
+
+      // Roofr rows are always valid and always primary — force the validity cell
+      if (isRoofr) {
+        // After source cell insertion, validity is now at index 2
+        const validityCell = row.cells[2];
+        if (validityCell) {
+          validityCell.innerHTML = `<span class="tag tag--green">${VALID_SVG} Valid</span>`;
+        }
+        // Remove any invalid cell styling from all cells in the row
+        Array.from(row.cells).forEach(td => td.classList.remove('cell-invalid'));
+      }
+
+      // All primary rows are editable regardless of source
+      if (isPrimary) markEditableCells(row);
     });
+
+    // Move Notes cell (currently at index 8 after Source insertion) to the very end
+    document.querySelectorAll('#table-body tr').forEach(row => {
+      if (row.classList.contains('section-header-row') || row.classList.contains('group-separator')) return;
+      const notesCell = row.cells[8];
+      if (!notesCell) return;
+      const actionsCell = row.querySelector('.cell-actions');
+      if (actionsCell) row.insertBefore(notesCell, actionsCell);
+      else row.appendChild(notesCell);
+    });
+
+    // Add override buttons to duplicate row data cells
+    const OVERRIDE_SVG = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/></svg>`;
+    const OVERRIDE_START_COL = 3; // skip Source (0), badge (1), status (2)
+
+    document.querySelectorAll('#table-body tr.row-duplicate').forEach(dupRow => {
+      const group = dupRow.dataset.group;
+      const primary = document.querySelector(`#table-body tr.row-primary[data-group="${group}"]`);
+
+      Array.from(dupRow.cells).forEach((td, i) => {
+        if (i < OVERRIDE_START_COL || td.classList.contains('cell-actions')) return;
+        const dupVal = td.textContent.replace(/\u00a0/g, '').trim();
+        if (!dupVal) return;
+
+        // Only show the button if the value differs from the primary's cell
+        const primCell = primary && primary.cells[i];
+        const primVal = primCell ? primCell.textContent.replace(/\u00a0/g, '').trim() : '';
+        if (dupVal === primVal) return;
+
+        td.classList.add('cell-overrideable');
+        const btn = document.createElement('button');
+        btn.className = 'override-btn';
+        btn.dataset.colIndex = i;
+        btn.dataset.value = dupVal; // snapshot before button text contaminates textContent
+        btn.innerHTML = OVERRIDE_SVG + ' Replace';
+        td.appendChild(btn);
+      });
+    });
+
+    // Override button click — copy cell value into matching primary row cell
+    document.getElementById('table-body').addEventListener('click', e => {
+      const btn = e.target.closest('.override-btn');
+      if (!btn) return;
+      e.stopPropagation();
+
+      const dupRow = btn.closest('tr');
+      const group = dupRow.dataset.group;
+      const primary = document.querySelector(`#table-body tr.row-primary[data-group="${group}"]`);
+      if (!primary) return;
+
+      const colIndex = parseInt(btn.dataset.colIndex);
+      const dupCell = dupRow.cells[colIndex];
+      const primCell = primary.cells[colIndex];
+      if (!dupCell || !primCell) return;
+
+      // Snapshot original before overwriting so undo can restore it
+      if (primCell.dataset.originalValue === undefined) {
+        primCell.dataset.originalValue = primCell.textContent.replace(/\u00a0/g, '').trim();
+      }
+
+      const val = btn.dataset.value || '';
+      primCell.textContent = val || '\u00a0';
+      primCell.classList.remove('cell-invalid');
+      applyFieldEditState(primCell, val);
+
+      markMissingRequired();
+      updateSwitchBtn(dupRow);
+      markRowEdited(primary);
+
+      // Values now match — remove the button
+      btn.closest('td').classList.remove('cell-overrideable');
+      btn.remove();
+
+      // Brief flash on the primary cell to confirm
+      primCell.style.transition = 'background 0s';
+      primCell.style.background = 'var(--background-accent-primary)';
+      requestAnimationFrame(() => {
+        primCell.style.transition = 'background 600ms ease';
+        primCell.style.background = '';
+      });
+    });
+
+    // ─── Floating pill toolbar for duplicate rows ────────────
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="dup-row-pill" class="dup-row-pill" role="toolbar" aria-label="Row actions">
+        <button class="pill-btn" data-action="switch">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          Switch to Primary
+        </button>
+        <div class="pill-sep"></div>
+        <button class="pill-btn" data-action="not-dup">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Not a duplicate
+        </button>
+        <div class="pill-sep"></div>
+        <button class="pill-btn" data-action="skip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          Manual Skip
+        </button>
+      </div>`);
+
+    // ─── Roofr row popover ───────────────────────────────────
+    const roofrPopover = document.createElement('div');
+    roofrPopover.className = 'roofr-popover';
+    roofrPopover.textContent = 'This is an existing Roofr record, update to keep this record up to date';
+    document.body.appendChild(roofrPopover);
+
+    // ─── Use button popover ──────────────────────────────────
+    const usePopover = document.createElement('div');
+    usePopover.className = 'roofr-popover';
+    usePopover.textContent = 'Replace this value in the primary record';
+    document.body.appendChild(usePopover);
+
+    document.getElementById('table-body').addEventListener('mouseover', e => {
+      const btn = e.target.closest('.override-btn');
+      if (!btn) { usePopover.classList.remove('visible'); return; }
+      usePopover.classList.add('visible');
+      const rect = btn.getBoundingClientRect();
+      const popH = usePopover.offsetHeight;
+      const popW = usePopover.offsetWidth;
+      usePopover.style.top  = (rect.top - popH - 6) + 'px';
+      usePopover.style.left = Math.min(rect.left, window.innerWidth - popW - 8) + 'px';
+    });
+
+    document.getElementById('table-body').addEventListener('mouseleave', () => {
+      usePopover.classList.remove('visible');
+    });
+
+    // ─── Match meta info tooltips ────────────────────────────
+    const metaTooltip = document.createElement('div');
+    metaTooltip.className = 'roofr-popover';
+    document.body.appendChild(metaTooltip);
+
+    document.querySelectorAll('.match-meta-info').forEach(btn => {
+      btn.addEventListener('mouseenter', () => {
+        metaTooltip.textContent = btn.dataset.tooltip;
+        metaTooltip.classList.add('visible');
+        const rect = btn.getBoundingClientRect();
+        const popH = metaTooltip.offsetHeight;
+        const popW = metaTooltip.offsetWidth;
+        metaTooltip.style.top  = (rect.top - popH - 6) + 'px';
+        metaTooltip.style.left = Math.min(rect.left - popW / 2 + rect.width / 2, window.innerWidth - popW - 8) + 'px';
+      });
+      btn.addEventListener('mouseleave', () => metaTooltip.classList.remove('visible'));
+    });
+
+    let roofrPopoverRow = null;
+    let roofrPopoverTimer = null;
+
+    function isRoofrRow(row) {
+      return !!row.querySelector('.tag--roofr');
+    }
+
+    function showRoofrPopover(row) {
+      const isDeleteRow = !!row.querySelector('.tag--delete');
+      roofrPopover.textContent = isDeleteRow
+        ? 'This Roofr record is older and will be deleted. Its data will be merged into the primary Roofr record.'
+        : 'This is an existing Roofr record, replace data value to keep the record up to date';
+      const rect     = row.getBoundingClientRect();
+      const wrap     = row.closest('.table-wrap');
+      const wrapRect = wrap ? wrap.getBoundingClientRect() : { top: 0, right: window.innerWidth, bottom: window.innerHeight, left: 0 };
+      roofrPopover.classList.add('visible');
+      const popW = roofrPopover.offsetWidth;
+      const popH = roofrPopover.offsetHeight;
+      // Horizontal: start at row left + 16px, clamp so right edge stays inside table
+      const left = Math.min(Math.max(rect.left + 16, wrapRect.left), wrapRect.right - popW);
+      // Vertical: prefer above the row; if it would clip above the table top, flip below
+      let top = rect.top - popH - 6;
+      if (top < wrapRect.top) top = rect.bottom + 6;
+      roofrPopover.style.top  = top + 'px';
+      roofrPopover.style.left = left + 'px';
+      roofrPopoverRow = row;
+    }
+
+    function hideRoofrPopover() {
+      clearTimeout(roofrPopoverTimer);
+      roofrPopoverTimer = null;
+      roofrPopover.classList.remove('visible');
+      roofrPopoverRow = null;
+    }
+
+    document.getElementById('table-body').addEventListener('mouseover', e => {
+      const row = e.target.closest('tr[data-group]');
+      if (!row || row.classList.contains('row-dismissed')) { hideRoofrPopover(); return; }
+      if (isRoofrRow(row)) {
+        if (row !== roofrPopoverRow) {
+          clearTimeout(roofrPopoverTimer);
+          roofrPopoverTimer = setTimeout(() => showRoofrPopover(row), 500);
+        }
+        hidePill(true);
+      } else {
+        hideRoofrPopover();
+      }
+    });
+
+    document.getElementById('table-body').addEventListener('mouseleave', hideRoofrPopover);
+
+    const pill         = document.getElementById('dup-row-pill');
+    let pillRow        = null;
+    let pillTimer      = null;
+    let pillSwitchTimer = null;
+
+    function positionPill(row) {
+      const rect     = row.getBoundingClientRect();
+      const wrap     = row.closest('.table-wrap');
+      const wrapRect = wrap ? wrap.getBoundingClientRect() : { right: window.innerWidth };
+      const pillW    = pill.offsetWidth || 300;
+      const gap      = 6;
+      const top      = rect.bottom + gap;
+      const left     = Math.max(8, Math.min(wrapRect.right - pillW - 12, window.innerWidth - pillW - 8));
+      pill.style.top  = top + 'px';
+      pill.style.left = left + 'px';
+    }
+
+    function showPill(row) {
+      clearTimeout(pillTimer);
+      pillRow = row;
+      pill.dataset.targetGroup = row.dataset.group;
+      // Reflect switch button disabled state
+      const switchBtn = pill.querySelector('[data-action="switch"]');
+      if (switchBtn) {
+        const group = row.dataset.group;
+        const primaryRow = document.querySelector(`#table-body tr.row-primary[data-group="${group}"]`);
+        const groupHasRoofr = primaryRow && !!primaryRow.querySelector('.tag--roofr');
+        const rowIsCsv = row.dataset.source === 'csv';
+        switchBtn.disabled = groupHasRoofr || rowIsCsv || !!(row.querySelector('.tag--red') || row.querySelector('.cell-invalid'));
+      }
+      positionPill(row);
+      pill.classList.add('visible');
+    }
+
+    function hidePill(immediate) {
+      clearTimeout(pillTimer);
+      clearTimeout(pillSwitchTimer);
+      if (immediate) { pill.classList.remove('visible'); pillRow = null; return; }
+      pillTimer = setTimeout(() => { pill.classList.remove('visible'); pillRow = null; }, 220);
+    }
+
+    // Show on row enter; when already visible, delay switching rows so the mouse
+    // can travel the 6px gap to the pill without it jumping to the next row
+    document.getElementById('table-body').addEventListener('mouseover', e => {
+      const row = e.target.closest('tr.row-duplicate');
+      if (!row || row.classList.contains('row-dismissed') || isRoofrRow(row)) return;
+      if (row === pillRow) { clearTimeout(pillSwitchTimer); return; }
+      clearTimeout(pillSwitchTimer);
+      const delay = pill.classList.contains('visible') ? 120 : 0;
+      pillSwitchTimer = setTimeout(() => showPill(row), delay);
+    });
+    document.getElementById('table-body').addEventListener('mouseleave', () => {
+      hidePill(false);
+      clearDiffHighlight();
+    });
+
+    // ─── Diff highlighting: yellow cells where dup value ≠ primary value ─────
+    let _diffRow = null;
+
+    function clearDiffHighlight() {
+      if (_diffRow) {
+        Array.from(_diffRow.cells).forEach(td => td.classList.remove('cell-diff'));
+        _diffRow = null;
+      }
+    }
+
+    function applyDiffHighlight(dupRow) {
+      clearDiffHighlight();
+      const group = dupRow.dataset.group;
+      const primaryRow = document.querySelector(`#table-body tr.row-primary[data-group="${group}"]`);
+      if (!primaryRow) return;
+      // Compare data cells only — skip Source(0), Priority(1), Validity(2), cell-actions
+      const skipCols = new Set([0, 1, 2]);
+      Array.from(dupRow.cells).forEach((td, i) => {
+        if (skipCols.has(i) || td.classList.contains('cell-actions')) return;
+        const primaryCell = primaryRow.cells[i];
+        if (!primaryCell) return;
+        const dupVal     = getCellText(td);
+        const primaryVal = getCellText(primaryCell);
+        if (dupVal && primaryVal && dupVal !== primaryVal) {
+          td.classList.add('cell-diff');
+        }
+      });
+      _diffRow = dupRow;
+    }
+
+    document.getElementById('table-body').addEventListener('mouseover', e => {
+      const row = e.target.closest('tr.row-duplicate');
+      if (!row || row.classList.contains('row-dismissed')) { clearDiffHighlight(); return; }
+      if (row !== _diffRow) applyDiffHighlight(row);
+    });
+
+    // Keep alive when mouse is over the pill; also cancel any pending row switch
+    pill.addEventListener('mouseenter', () => { clearTimeout(pillTimer); clearTimeout(pillSwitchTimer); });
+    pill.addEventListener('mouseleave', () => hidePill(false));
+
+    // Pill click › delegate to the hidden button inside the specific hovered row
+    pill.addEventListener('click', e => {
+      const btn = e.target.closest('.pill-btn');
+      if (!btn || btn.disabled) return;
+      if (!pillRow) return;
+      const target = pillRow.querySelector(`[data-action="${btn.dataset.action}"]`);
+      if (target && !target.disabled) target.click();
+      hidePill(true);
+    });
+
+    // Hide on any scroll
+    document.querySelector('.page-main').addEventListener('scroll', () => hidePill(true), { passive: true });
+    document.querySelectorAll('.table-wrap').forEach(w => w.addEventListener('scroll', () => hidePill(true), { passive: true }));
+    window.addEventListener('resize', () => hidePill(true), { passive: true });
 
     const UNDO_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>`;
     const SKIPPED_UNDO_TOOLBAR = `<div class="action-toolbar"><button class="action-btn" data-action="undo-skip" title="Undo">${UNDO_SVG} Undo</button></div>`;
@@ -2374,9 +3550,9 @@
           <td${!name  ? ' class="cell-invalid"' : ''}>${name  || '&nbsp;'}</td>
           <td${!email ? ' class="cell-invalid"' : ''}>${email || '&nbsp;'}</td>
           <td>${phone || '&nbsp;'}</td>
-          <td style="color:var(--text-muted);"${!id ? ' class="cell-invalid"' : ''}>${id || '&nbsp;'}</td>
-          <td style="color:var(--text-muted);">${date    || '&nbsp;'}</td>
-          <td style="color:var(--text-muted);">${notes   || '&nbsp;'}</td>
+          <td class="cell-muted"${!id ? ' class="cell-invalid"' : ''}>${id || '&nbsp;'}</td>
+          <td class="cell-muted">${date    || '&nbsp;'}</td>
+          <td class="cell-muted">${notes   || '&nbsp;'}</td>
           <td>${createdBy || '&nbsp;'}</td>
           <td>${secEmail  || '&nbsp;'}</td>
           <td>${secPhone  || '&nbsp;'}</td>
